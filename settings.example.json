@@ -1,0 +1,58 @@
+{
+  // ============================================
+  // CONFIGURACIÓN DE PRODUCTIVITY TIMER
+  // ============================================
+  
+  // Duración de la sesión de trabajo en minutos
+  "productivityTimer.workDuration": 30,
+  
+  // Duración del descanso en minutos
+  "productivityTimer.breakDuration": 10,
+  
+  // Minutos mínimos diarios para mantener la racha
+  "productivityTimer.minimumDailyMinutes": 30,
+  
+  // Tipo de alarma: "local", "youtube" o "spotify"
+  "productivityTimer.alarmType": "local",
+  
+  // Ruta del archivo de audio local o URL de YouTube
+  // Ejemplos:
+  //   Windows: "C:\\Users\\TuUsuario\\Music\\alarm.mp3"
+  //   macOS/Linux: "/Users/TuUsuario/Music/alarm.mp3"
+  //   YouTube: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  //   Spotify: "spotify:track:3n3Ppam7vgaVa1iaRUc9Lp"
+  "productivityTimer.alarmPath": "",
+  
+  // Volumen de la alarma (0-100)
+  "productivityTimer.volume": 50,
+  
+  // ============================================
+  // EJEMPLOS DE CONFIGURACIONES PERSONALIZADAS
+  // ============================================
+  
+  // TÉCNICA POMODORO CLÁSICA (25/5)
+  // "productivityTimer.workDuration": 25,
+  // "productivityTimer.breakDuration": 5,
+  
+  // SESIONES LARGAS (50/10)
+  // "productivityTimer.workDuration": 50,
+  // "productivityTimer.breakDuration": 10,
+  
+  // SESIONES CORTAS (15/5)
+  // "productivityTimer.workDuration": 15,
+  // "productivityTimer.breakDuration": 5,
+  
+  // RACHA EXIGENTE (60 minutos diarios)
+  // "productivityTimer.minimumDailyMinutes": 60,
+  
+  // RACHA RELAJADA (15 minutos diarios)
+  // "productivityTimer.minimumDailyMinutes": 15,
+  
+  // ALARMA CON YOUTUBE
+  // "productivityTimer.alarmType": "youtube",
+  // "productivityTimer.alarmPath": "https://www.youtube.com/watch?v=KolfEhV-KiA",
+  
+  // ALARMA CON SPOTIFY
+  // "productivityTimer.alarmType": "spotify",
+  // "productivityTimer.alarmPath": "spotify:track:3n3Ppam7vgaVa1iaRUc9Lp"
+}

@@ -1,0 +1,112 @@
+{
+  "name": "productivity-timer",
+  "displayName": "Productivity Timer - Pomodoro & Motivación",
+  "description": "Temporizador Pomodoro con sistema de rachas, puntos y frases motivacionales",
+  "version": "1.0.0",
+  "publisher": "Sebaxsus+Claude",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "productivityTimer.startWorkSession",
+        "title": "🍅 Iniciar Sesión de Trabajo",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.startBreak",
+        "title": "☕ Iniciar Descanso",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.stopTimer",
+        "title": "⏹️ Detener Temporizador",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.setDailyLimit",
+        "title": "⏰ Establecer Límite Diario",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.showStats",
+        "title": "📊 Ver Estadísticas y Rachas",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.configure",
+        "title": "⚙️ Configurar Temporizador",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.configureSound",
+        "title": "🔊 Configurar Sonido de Alarma",
+        "category": "Productivity Timer"
+      }
+    ],
+    "configuration": {
+      "title": "Productivity Timer",
+      "properties": {
+        "productivityTimer.workDuration": {
+          "type": "number",
+          "default": 30,
+          "description": "Duración de la sesión de trabajo en minutos"
+        },
+        "productivityTimer.breakDuration": {
+          "type": "number",
+          "default": 10,
+          "description": "Duración del descanso en minutos"
+        },
+        "productivityTimer.minimumDailyMinutes": {
+          "type": "number",
+          "default": 30,
+          "description": "Minutos mínimos diarios para mantener racha"
+        },
+        "productivityTimer.alarmType": {
+          "type": "string",
+          "enum": ["local", "youtube", "spotify"],
+          "default": "local",
+          "description": "Tipo de alarma a usar"
+        },
+        "productivityTimer.alarmPath": {
+          "type": "string",
+          "default": "",
+          "description": "Ruta del archivo de sonido local o URL de YouTube"
+        },
+        "productivityTimer.volume": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Volumen de la alarma (0-100)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^5.x",
+    "@typescript-eslint/parser": "^5.x",
+    "eslint": "^8.x",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}

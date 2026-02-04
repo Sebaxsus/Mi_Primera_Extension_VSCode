@@ -4,15 +4,40 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { MusicPlayer } from './musicPlayer';
 
+interface AlarmData {
+    alarmType: string,
+    alarmPath: string,
+    alarmName: string,
+    volume: number
+}
+
 export class AlarmManager {
     private currentProcess: child_process.ChildProcess | null = null;
     private musicPlayer: MusicPlayer = new MusicPlayer;
 
-    async playAlarm(): Promise<void> {
+    public getAlarmData(): AlarmData {
         const config = vscode.workspace.getConfiguration('productivityTimer');
         const alarmType = config.get<string>('alarmType', 'local');
         const alarmPath = config.get<string>('alarmPath', 'C:/Users/sebax/Music/Triste.mp3');
         const volume = config.get<number>('volume', 50);
+
+        const regex = /[^\\]+\.mp3/u;
+
+        return {
+            alarmType,
+            alarmPath,
+            alarmName: alarmPath.slice(alarmPath.search(regex)),
+            volume
+        };
+    }
+
+    async playAlarm(): Promise<void> {
+        
+        const { alarmType, alarmPath, alarmName, volume } = this.getAlarmData();
+        
+        vscode.window.showInformationMessage(
+            `Reproduciendo la alarma! ${alarmName}`
+        );
 
         try {
             switch (alarmType) {

@@ -50,6 +50,11 @@
         "command": "productivityTimer.configureSound",
         "title": "🔊 Configurar Sonido de Alarma",
         "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.testAlarm",
+        "title": "🔊 Probar el Sonido de Alarma",
+        "category": "Productivity Timer"
       }
     ],
     "configuration": {

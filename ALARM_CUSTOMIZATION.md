@@ -1,5 +1,9 @@
 # 🔊 Guía de Personalización de Alarmas
 
+## Para Windows se usa Media de PresentationCore de .Net
+
+[Mas Info](https://learn.microsoft.com/es-es/dotnet/api/system.windows.media.mediaplayer?view=windowsdesktop-8.0)
+
 ## Sonidos Recomendados
 
 ### 1. Sonidos Relajantes (Ideal para Descansos)

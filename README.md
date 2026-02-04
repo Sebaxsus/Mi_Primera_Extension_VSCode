@@ -28,7 +28,7 @@ Una extensión completa de Visual Studio Code que te ayuda a mantener el enfoque
 ### 🔊 Alarmas Personalizables
 Elige cómo quieres ser notificado al terminar cada sesión:
 
-1. **Archivo Local**: Usa cualquier archivo de audio (.mp3, .wav, .ogg, etc.)
+1. **Archivo Local**: Usa cualquier archivo de audio (.mp3, .wav, .ogg, etc.) **[MediaPlayer Win][1]**
 2. **YouTube**: Reproduce música o sonidos desde YouTube (requiere yt-dlp + ffmpeg)
 3. **Spotify**: Controla Spotify para reproducir tu música favorita
 
@@ -222,3 +222,6 @@ MIT License - Siéntete libre de usar y modificar esta extensión
 ---
 
 **¡Programa con enfoque, mantén tu racha y alcanza tus metas! 🚀**
+
+
+[1]: https://learn.microsoft.com/es-es/dotnet/api/system.windows.media.mediaplayer?view=windowsdesktop-8.0 "Link a la documentación de .Net sobre la Clase Media Player"

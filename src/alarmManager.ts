@@ -2,14 +2,16 @@ import * as vscode from 'vscode';
 import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { MusicPlayer } from './musicPlayer';
 
 export class AlarmManager {
     private currentProcess: child_process.ChildProcess | null = null;
+    private musicPlayer: MusicPlayer = new MusicPlayer;
 
     async playAlarm(): Promise<void> {
         const config = vscode.workspace.getConfiguration('productivityTimer');
         const alarmType = config.get<string>('alarmType', 'local');
-        const alarmPath = config.get<string>('alarmPath', '');
+        const alarmPath = config.get<string>('alarmPath', 'C:/Users/sebax/Music/Triste.mp3');
         const volume = config.get<number>('volume', 50);
 
         try {
@@ -22,6 +24,7 @@ export class AlarmManager {
                     break;
                 case 'local':
                 default:
+                    console.log("Ruta de la alarma: %s", alarmPath);
                     await this.playLocal(alarmPath, volume);
                     break;
             }
@@ -43,9 +46,26 @@ export class AlarmManager {
         try {
             if (platform === 'win32') {
                 // Windows: usar PowerShell
-                const volumeDecimal = volume / 100;
-                const command = `powershell -c "(New-Object Media.SoundPlayer '${filePath}').PlaySync()"`;
-                child_process.exec(command);
+                // const volumeDecimal = volume / 100;
+                console.log("Ejecutando el archivo %s usando system.windows.media.mediaplayer de .Net \nPlataforma: %s", filePath, platform);
+                // Como se usa una Clase de .Net se interactua con el Reproductor mediante Clases y Metodos.
+
+                this.musicPlayer.setVolume(volume);
+                this.musicPlayer.play(filePath);
+
+                // // Inyecto la Dependencia necesaria de .Net a powershell.
+                // const INJECT_PLAYER_DOTNET_DEPENDENCY = 'Add-Type -AssemblyName presentationCore';
+                // // Inicializo un Objeto MediaPlayer de presentationCore .
+                // const PLAYER_INIT = '$player = New-Object System.Windows.Media.MediaPlayer';
+                // // Uso powershell para obtener la ruta abosuluta de mi archivo (Asegurando comportamiento).
+                // const GET_FILE_ABSOLUTE_PATH = `(Get-Item '${filePath}').FullName`;
+                // // LLamando el metodo .Open(URI) de la Clase MediaPlayer.
+                // const OPEN_FILE_IN_PLAYER = `$player.Open(${GET_FILE_ABSOLUTE_PATH})`;
+                // // LLamo el metodo .Play() de la Clase MediaPlayer de la Dependencia presentationCore de .Net .
+                // const PLAY_PLAYER = '$player.Play()';
+
+                // const command = `powershell -c "Add-Type -AssemblyName presentationCore;$player = New-Object System.Windows.Media.MediaPlayer;$player.Open((Get-Item ${filePath}).FullName);$player.Play()"`;
+                // child_process.spawn(command);
             } else if (platform === 'darwin') {
                 // macOS: usar afplay
                 const volumeDecimal = volume / 100;
@@ -111,7 +131,10 @@ export class AlarmManager {
             ]);
 
             // Conectar la salida de yt-dlp con la entrada de ffplay
-            ytDlpProcess.stdout.pipe(this.currentProcess.stdin);
+            if (this.currentProcess.stdin) {
+                ytDlpProcess.stdout.pipe(this.currentProcess.stdin);
+            }
+
 
             ytDlpProcess.on('error', () => {
                 vscode.window.showErrorMessage('Error al descargar audio de YouTube');
@@ -191,6 +214,8 @@ export class AlarmManager {
     }
 
     stopAlarm(): void {
+        this.musicPlayer.stop();
+        
         if (this.currentProcess) {
             this.currentProcess.kill();
             this.currentProcess = null;
@@ -204,6 +229,31 @@ export class AlarmManager {
         // Detener después de 3 segundos
         setTimeout(() => {
             this.stopAlarm();
-        }, 3000);
+            vscode.window.showInformationMessage('🔊 La prueba de audio ha finalizado.');
+        }, 60000); // Modificado a un minuto | 60 seg | 60000 ms
+    }
+
+    /**
+     * ## Por ahora no se debe usar.
+     * 
+     * Funcion para convertir un archivo con extension `mp3` a `wav`, Con el fin
+     * de asegurar compatibilidad con la api nativa de Windows `Media.MediaPlayer`
+     * 
+     * ### TODO
+     * - Guardar el archivo generado en el directorio de la Extension o En una ruta predeterminida.
+     * - Verificar por segunda vez que 1.Exista ffmpeg, 2. La plataforma sea Windows.
+     * - Buscar la manera de heredar un subproceso existente y ejecutar el comando ahi.
+     */
+    convertMp3ToWav(mp3FilePath: string, wavSavePath: string = "C:/Users/sebax/Music/PomodoroExtensionAlarm"): void {
+        // Ejecuto ffmpeg en un proceso de powershell para usar ffmpeg
+        // Y convertir el archivo mp3 en wav para poder usar system.windows.Media.SoundPlayer
+
+        // Extraigo el Nombre del archivo (Para usarlo en el nuevo archivo .wav)
+        const fileName = mp3FilePath.slice(mp3FilePath.lastIndexOf('/'), );
+
+        // Comando de ffmpeg
+        const ffmpegConvertCommand = 'ffmpeg -i "C:/Users/sebax/Music/Triste.mp3" "C:/Users/sebax/Music/Triste.wav"';
+        const powershellCommand = `powershell -c ${ffmpegConvertCommand}`;
+        child_process.exec(powershellCommand);
     }
 }

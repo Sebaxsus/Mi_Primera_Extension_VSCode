@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('productivityTimer.showStats', () => {
-            showStatsPanel();
+            showStatsPanel(context);
         })
     );
 
@@ -70,6 +70,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('productivityTimer.configureSound', async () => {
             await configureSoundAlarm();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('productivityTimer.testAlarm', async () => {
+            await alarmManager.testAlarm();
         })
     );
 
@@ -93,7 +99,7 @@ function showDailyMotivationalQuote() {
     });
 }
 
-function showStatsPanel() {
+function showStatsPanel(context: vscode.ExtensionContext) {
     const stats = dataManager.getStats();
     const todayMinutes = dataManager.getTodayMinutes();
 
@@ -104,10 +110,25 @@ function showStatsPanel() {
         { enableScripts: true }
     );
 
+    panel.webview.onDidReceiveMessage(
+        async message => {
+            switch (message.command) {
+                case 'ejecutarAlarma':
+                    // Aquí es donde el objeto de tu clase entra en acción
+                    await alarmManager.testAlarm();
+                    vscode.window.showInformationMessage('Alarma procesada');
+                    return;
+            }
+        },
+        undefined,
+        context.subscriptions // Limpieza de memoria al cerra
+    );
+
     panel.webview.html = getStatsHtml(stats, todayMinutes);
 }
 
 function getStatsHtml(stats: any, todayMinutes: number): string {
+    const alarmData = alarmManager.getAlarmData();
     const recentSessions = stats.sessions.slice(-7).reverse();
     const sessionsHtml = recentSessions.map((session: any) => `
         <tr>
@@ -237,6 +258,13 @@ function getStatsHtml(stats: any, todayMinutes: number): string {
                 <div class="stat-value">${stats.totalSessions}</div>
                 <div class="stat-label">sesiones completadas</div>
             </div>
+
+            <div class="stat-card">
+                <div class="stat-header">Alarma Actual</div>
+                <div class="achievement">${alarmData.alarmName}</div>
+                <div class="stat-label">Tipo: ${alarmData.alarmType}</div>
+                <button class="achievement" onclick="solicitarPrueba()">Probar</button>
+            </div>
         </div>
 
         <div class="stat-card">
@@ -267,6 +295,16 @@ function getStatsHtml(stats: any, todayMinutes: number): string {
             </p>
         </div>
     </body>
+    <script>
+        // Este código corre DENTRO del Webview
+        const vscode = acquireVsCodeApi();
+
+        function solicitarPrueba() {
+            vscode.postMessage({
+                command: 'ejecutarAlarma'
+            });
+        }
+    </script>
     </html>`;
 }
 

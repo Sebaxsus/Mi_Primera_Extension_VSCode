@@ -128,10 +128,13 @@ export class Timer {
 
         const elapsedMinutes = Math.floor((Date.now() - this.sessionStartTime) / 60000);
 
+        console.log('Contador Finalizado, Estado: %s', this.state);
+
         switch (this.state) {
             case TimerState.WORKING:
+                console.log("Ejecutando Alarma.");
                 await this.alarmManager.playAlarm();
-                await this.dataManager.addSession(elapsedMinutes);
+                // await this.dataManager.addSession(elapsedMinutes);
                 
                 const stats = this.dataManager.getStats();
                 vscode.window.showInformationMessage(
@@ -187,7 +190,7 @@ export class Timer {
         }
 
         this.alarmManager.stopAlarm();
-        this.state = TimerState.IDLE;
+        // this.state = TimerState.IDLE;
         this.remainingSeconds = 0;
         this.updateStatusBar();
 

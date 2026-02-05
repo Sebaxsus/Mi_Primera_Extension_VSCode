@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { MusicPlayer } from './musicPlayer';
 
-interface AlarmData {
+export interface AlarmData {
     alarmType: string,
     alarmPath: string,
     alarmName: string,

@@ -2,8 +2,15 @@ import type { AlarmData } from "../alarmManager"; // Se usa la plabra clave Type
 import type { UserStats, SessionData } from "../dataManager";
 // TypeScript 3.8+ permite import type para asegurar que la importación sea solo para comprobación de tipos y no genere código.
 import { getAchievementsHtml } from "./achievementsManager";
+import * as vscode from 'vscode';
 
 export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: AlarmData, quote: string): string {
+    const config = vscode.workspace.getConfiguration('productivityTimer');
+    
+    const workMinutes = config.get<number>('workDuration', 30);
+    const breakMinutes = config.get<number>('breakDuration', 10);
+    const dailyMinimunMinutes = config.get<number>('minimumDailyMinutes', 30);
+    
     const recentSessions = stats.sessions.slice(-7).reverse();
     const sessionsHtml = recentSessions.map((session: SessionData) => `
         <tr>
@@ -92,6 +99,20 @@ export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: 
                 background: linear-gradient(90deg, #4CAF50, #45a049);
                 transition: width 0.3s ease;
             }
+            .inline-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+                padding-bottom: 10px;
+                padding-inline: 5px;
+                justify-items: center;
+            }
+            @media (width > 1600px) {
+                .inline-list {
+                    flex-direction: row;
+                    align-content: center;
+                }
+            }
         </style>
     </head>
     <body>
@@ -135,11 +156,33 @@ export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: 
             </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-header">Alarma Actual</div>
-            <div class="achievement">${alarmData.alarmName}</div>
-            <div class="stat-label">Tipo: ${alarmData.alarmType}</div>
-            <button class="achievement" onclick="solicitarPrueba()">Probar</button>
+        <h1> Configuración Actual</h1>
+
+        <div class="grid">
+            <div class="stat-card">
+                <div class="stat-header">Alarma</div>
+                <div class="inline-list">
+                    <div class="achievement">Nombre: ${alarmData.alarmName}</div>
+                    <div class="achievement">Volumen: ${alarmData.volume} %</div>
+                    <div class="achievement">Tipo: ${alarmData.alarmType}</div>
+                </div>
+                <button class="achievement" onclick="solicitarPrueba()">Probar</button>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">Trabajo</div>
+                <div class="stat-value">${workMinutes}</div>
+                <div class="stat-label">minutos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">Descanso</div>
+                <div class="stat-value">${breakMinutes}</div>
+                <div class="stat-label">minutos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">Diario</div>
+                <div class="stat-value">${dailyMinimunMinutes}</div>
+                <div class="stat-label">minutos</div>
+            </div>
         </div>
 
         <div class="stat-card">

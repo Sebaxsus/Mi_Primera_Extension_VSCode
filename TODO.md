@@ -9,3 +9,4 @@
 ## FIXES
 
 - [ ] En el timer cambiar el stopTimer, y onTimerFinish
+- [ ] Incluir un Estado para la alarma con el fin de determinar si se esta ejecutando o no.

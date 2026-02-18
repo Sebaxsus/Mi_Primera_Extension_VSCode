@@ -32,8 +32,11 @@ export class MusicPlayer {
 
     private handlePowerShellEvent(response: any) {
         switch (response.event) {
+            case "info":
+                console.log(`[${response.type}] [${response.timestamp}] ${response.msg}`);
+                break;
             case "status_update":
-                console.log(`[Audio] Posición: ${response.position}s | Volumen: ${response.volume * 100}%`);
+                console.log(`[Audio] Posición: ${response.position}s | Volumen: ${response.volume * 100}% | Buffering: ${response.buffering} | Estado: ${response.playerStatus}`);
                 break;
             case "currentSong":
                 console.log(`Cancion Actual: ${response.currentSong}`);
@@ -52,17 +55,42 @@ export class MusicPlayer {
         this.psProcess?.stdin?.write(`${message}\n`);
     }
 
+    /**
+     * Establece una fuente al reproductor y luego la ejecuta.
+     * @param filePath - Ruta al archivo ya sea local o una url a un stream.
+     */
     public play(filePath: string) {
         this.sendCommand('open', { path: filePath });
         this.sendCommand('play');
     }
 
+    /**
+     * 
+     * @param volume - Valor entre el rango 0 - 100
+     */
     public setVolume(volume: number) {
+        // Deberia validar el volumen por segunda vez???
+        // if (volume > 100) {
+        //     volume = 100;
+        // }
+        // if (volume < 0) {
+        //     volume = 0;
+        // }
         // volumen de 0 a 100 -> 0.0 a 1.0
         this.sendCommand('volume', { value: volume / 100 });
     }
 
+    /**
+     * Pausa la ejecucion del reproductor.
+     */
     public stop() {
         this.sendCommand('stop');
+    }
+
+    /**
+     * Solicuta un reporte de estado al reproductor.
+     */
+    public status() {
+        this.sendCommand('status');
     }
 }

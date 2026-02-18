@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { SpotifyToken } from './Spotify/auth';
 
 export interface SessionData {
     date: string;
@@ -19,6 +20,7 @@ export interface UserStats {
 export class DataManager {
     private context: vscode.ExtensionContext;
     private readonly STATS_KEY = 'productivityTimer.stats';
+    private readonly SPOTIFY_KEY = 'productivityTimer.spotify';
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -157,5 +159,29 @@ export class DataManager {
     getTodayMinutes(): number {
         const stats = this.getStats();
         return this.getMinutesForDate(stats, this.getTodayDateString());
+    }
+
+    public async checkStreak() {
+        const stats = this.getStats();
+        const today = this.getTodayDateString();
+        const yesterday = this.getDateString(new Date(Date.now() - 86400000));
+        
+        // Racha rota
+        if (stats.lastSessionDate && stats.lastSessionDate !== yesterday && stats.lastSessionDate !== today) {
+            // Actualizar racha más larga
+            if (stats.currentStreak > stats.longestStreak) {
+                stats.longestStreak = stats.currentStreak;
+            }
+
+            stats.currentStreak = 0;
+
+            // Actualizando la Racha
+            await this.saveStats(stats);
+        }
+        
+    }
+
+    async saveSpotifyData(token: SpotifyToken): Promise<void> {
+        await this.context.globalState.update(this.SPOTIFY_KEY, token);
     }
 }

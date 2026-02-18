@@ -1,5 +1,6 @@
 Add-Type -AssemblyName PresentationCore
 $player = New-Object System.Windows.Media.MediaPlayer
+$wshell = New-Object -ComObject WScript.Shell
 $lastStatus = "Stopped"
 
 function SendInfo($type, $msg) {
@@ -24,6 +25,7 @@ while ($true) {
     try {
         $data = $line | ConvertFrom-Json
         switch ($data.command) {
+            "command" { Invoke-Expression $data.msg; }
             "open"   { $player.Open((Get-Item $data.path).FullName); SendInfo("INFO", "Opened source " + $player.source.AbsoluteUri) } # Establece la fuente a reproducir (URI)
             "play"   { $player.Play(); $lastStatus = "Playing"; SendInfo("INFO", $lastStatus) } # Ejecuta la fuente
             "stop"   { $player.Stop(); $lastStatus = "Stopped"; SendInfo("INFO", $lastStatus) } # Detiene la ejecucion

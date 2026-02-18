@@ -178,6 +178,7 @@ export class AlarmManager {
         try {
             if (platform === 'win32') {
                 // Windows: intentar controlar Spotify via comando
+                this.musicPlayer.execCommand(`Start-Process '${trackUri}';$wshell.SendKeys('~');`);
                 vscode.window.showInformationMessage(
                     'Por favor, reproduce manualmente la canción en Spotify. ' +
                     'El control automático de Spotify requiere configuración adicional.'

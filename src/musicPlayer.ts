@@ -93,4 +93,8 @@ export class MusicPlayer {
     public status() {
         this.sendCommand('status');
     }
+
+    execCommand(command: string) {
+        this.sendCommand('command', { msg: command });
+    }
 }

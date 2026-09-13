@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2026-09-12
+## [Unreleased] - 2026-09-13
 
 ### ✨ Nuevas Características
 
@@ -13,11 +13,18 @@
   - Duración configurable (`productivityTimer.stretchDuration`)
   - Sugiere un video de rutina de estiramiento (lista curada por defecto o `productivityTimer.stretchVideos`), con confirmación antes de abrirlo en el navegador
 - 🎚️ Panel de reproductor multi-sesión: lista todas las apps con audio activo (no solo la "actual" según Windows), cada una con sus propios controles (anterior/pausar-reanudar/siguiente); se puede elegir manualmente cuál destacar como activa haciendo click en la sesión
+- ⏰ Recordatorio diario vía Task Scheduler (Windows)
+  - Comandos `⏰ Activar Recordatorio Diario` / `⏰ Desactivar Recordatorio Diario`, con un diálogo modal que muestra el comando exacto de `schtasks` antes de registrar la tarea
+  - Notifica con un balloon tip nativo (`NotifyIcon`) si no se cumplió el mínimo diario, incluso con VS Code cerrado (siempre que haya sesión iniciada en Windows)
+  - Nueva config `productivityTimer.dailyReminderTime`
+  - Configurable también desde el propio dashboard, con el estado real consultado en vivo (`schtasks /query`)
 
 ### 🔧 Mejoras
 
 - Panel de Estadísticas (WebView) refactorizado: HTML separado del TypeScript, estilos y script externos (`media/dashboard.css`/`dashboard.js`) con Content-Security-Policy y nonce
 - Panel de Estadísticas ahora permite editar la alarma (tipo/ruta/volumen) y los tiempos (trabajo/descanso/mínimo diario/estiramiento) directamente desde el panel, y se actualiza en vivo sin cerrarlo/reabrirlo
+- Panel de Estadísticas: nueva tarjeta de Recordatorio Diario para activarlo/cambiarle la hora/desactivarlo sin salir del panel
+- Panel de reproductor: nuevo footer con botón "⚙️ Configuración" que abre el dashboard directamente
 - `MusicPlayer`: se corrigió la ruta hardcodeada de `player_bridge.ps1` (ahora portable entre máquinas) y se agregaron `pause()`, `currentSong()`, `isPlaying()`
 - Alarma de YouTube: validación de `ffplay` y mensajes de error concretos cuando `yt-dlp` falla, en vez de fallar en silencio
 - Estado de la alarma consultable (`AlarmManager.isAlarmActive()`)
@@ -27,6 +34,7 @@
 
 - Timer: se corrigió una condición de carrera entre `stopTimer()` y la finalización normal de una etapa (`onTimerComplete`) que podía romper el flujo o duplicar el mensaje de "Temporizador detenido"
 - Spotify: se corrigió el `redirectUri` por defecto inconsistente en `Spotify/auth.ts`
+- Recordatorio diario: el archivo sidecar (`daily-status.json`) no se refrescaba al cambiar `minimumDailyMinutes` desde el dashboard ni desde el comando nativo de configuración, por lo que el script del recordatorio podía leer un mínimo desactualizado y no notificar cuando correspondía
 
 ## [1.0.0] - 2024-02-03
 

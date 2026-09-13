@@ -24,7 +24,18 @@ function getSessionsHtml(stats: UserStats): string {
  * refresco en vivo (`panelManager.refreshStatsPanel`), para no duplicar la
  * lógica de armado de datos en dos lugares.
  */
-export function getDashboardData(stats: UserStats, todayMinutes: number, alarmData: AlarmData, quote: string) {
+export interface DailyReminderStatus {
+    enabled: boolean;
+    time: string;
+}
+
+export function getDashboardData(
+    stats: UserStats,
+    todayMinutes: number,
+    alarmData: AlarmData,
+    quote: string,
+    dailyReminder: DailyReminderStatus
+) {
     const generalConfig = getGeneralConfig();
 
     return {
@@ -38,6 +49,7 @@ export function getDashboardData(stats: UserStats, todayMinutes: number, alarmDa
         },
         alarmData,
         generalConfig,
+        dailyReminder,
         achievementsHtml: getAchievementsHtml(stats),
         sessionsHtml: getSessionsHtml(stats),
         quote
@@ -50,9 +62,10 @@ export function getStatsHtml(
     stats: UserStats,
     todayMinutes: number,
     alarmData: AlarmData,
-    quote: string
+    quote: string,
+    dailyReminder: DailyReminderStatus
 ): string {
-    const data = getDashboardData(stats, todayMinutes, alarmData, quote);
+    const data = getDashboardData(stats, todayMinutes, alarmData, quote, dailyReminder);
 
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'dashboard.css'));
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'dashboard.js'));
@@ -153,6 +166,19 @@ export function getStatsHtml(
                 </label>
                 <div class="config-actions">
                     <button id="save-general-btn" class="achievement">Guardar Tiempos</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">⏰ Recordatorio Diario</div>
+            <div class="config-form">
+                <p id="reminder-status">${data.dailyReminder.enabled
+                    ? `Activo, se ejecuta todos los días a las ${data.dailyReminder.time} (incluso con VS Code cerrado, si tienes sesión iniciada en Windows).`
+                    : 'No está activado. Se avisa vía Task Scheduler si no cumpliste tu mínimo diario.'}</p>
+                <div class="config-actions">
+                    <button id="enable-reminder-btn" class="achievement">${data.dailyReminder.enabled ? 'Cambiar Hora' : 'Activar'}</button>
+                    <button id="disable-reminder-btn" class="achievement" ${data.dailyReminder.enabled ? '' : 'disabled'}>Desactivar</button>
                 </div>
             </div>
         </div>

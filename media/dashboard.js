@@ -16,7 +16,10 @@ const els = {
     workDuration: document.getElementById('work-duration'),
     breakDuration: document.getElementById('break-duration'),
     minimumDaily: document.getElementById('minimum-daily'),
-    stretchDuration: document.getElementById('stretch-duration')
+    stretchDuration: document.getElementById('stretch-duration'),
+    reminderStatus: document.getElementById('reminder-status'),
+    enableReminderBtn: document.getElementById('enable-reminder-btn'),
+    disableReminderBtn: document.getElementById('disable-reminder-btn')
 };
 
 function applyData(data) {
@@ -53,6 +56,14 @@ function applyData(data) {
         els.minimumDaily.value = data.generalConfig.minimumDailyMinutes;
         els.stretchDuration.value = data.generalConfig.stretchDuration;
     }
+
+    if (data.dailyReminder) {
+        els.reminderStatus.textContent = data.dailyReminder.enabled
+            ? `Activo, se ejecuta todos los días a las ${data.dailyReminder.time} (incluso con VS Code cerrado, si tienes sesión iniciada en Windows).`
+            : 'No está activado. Se avisa vía Task Scheduler si no cumpliste tu mínimo diario.';
+        els.enableReminderBtn.textContent = data.dailyReminder.enabled ? 'Cambiar Hora' : 'Activar';
+        els.disableReminderBtn.disabled = !data.dailyReminder.enabled;
+    }
 }
 
 // Datos iniciales embebidos por dashboard.ts (evita un primer postMessage de ida y vuelta).
@@ -83,6 +94,14 @@ document.getElementById('save-general-btn')?.addEventListener('click', () => {
         minimumDailyMinutes: parseInt(els.minimumDaily.value, 10),
         stretchDuration: parseInt(els.stretchDuration.value, 10)
     });
+});
+
+els.enableReminderBtn?.addEventListener('click', () => {
+    vscode.postMessage({ command: 'enableDailyReminder' });
+});
+
+els.disableReminderBtn?.addEventListener('click', () => {
+    vscode.postMessage({ command: 'disableDailyReminder' });
 });
 
 window.addEventListener('message', (event) => {

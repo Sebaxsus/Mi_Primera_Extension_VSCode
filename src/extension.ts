@@ -9,6 +9,7 @@ import { PlayerViewProvider } from './WebView/playerViewProvider';
 import { SpotifyAuth } from './Spotify/auth';
 import { showToast } from './notify';
 import { saveGeneralConfig, saveStretchVideos, saveAlarmConfig } from './configService';
+import { enableDailyReminder, disableDailyReminder } from './dailyReminderManager';
 
 let timer: Timer;
 let dataManager: DataManager;
@@ -25,6 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
     quotes = new MotivationalQuotes();
 
     dataManager.checkStreak();
+    dataManager.refreshDailyStatusFile();
 
     // Crear status bar item
     const statusBarItem = vscode.window.createStatusBarItem(
@@ -92,6 +94,18 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('productivityTimer.testAlarm', async () => {
             await alarmManager.testAlarm();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('productivityTimer.enableDailyReminder', async () => {
+            await enableDailyReminder(context, dataManager);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('productivityTimer.disableDailyReminder', async () => {
+            await disableDailyReminder(context);
         })
     );
 
@@ -169,6 +183,7 @@ async function showConfigurationPanel() {
         minimumDailyMinutes: minimumDaily ? parseInt(minimumDaily) : undefined,
         stretchDuration: stretchDuration ? parseInt(stretchDuration) : undefined
     });
+    dataManager.refreshDailyStatusFile();
 
     if (stretchVideos !== undefined) {
         const urls = stretchVideos.split(',').map(s => s.trim()).filter(Boolean);

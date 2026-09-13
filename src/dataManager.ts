@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SpotifyToken } from './Spotify/auth';
 import { showToast } from './notify';
 
@@ -43,6 +45,44 @@ export class DataManager {
 
     async saveStats(stats: UserStats): Promise<void> {
         await this.context.globalState.update(this.STATS_KEY, stats);
+        this.writeDailyStatusFile(stats);
+    }
+
+    /**
+     * Ruta del archivo "sidecar" con el estado del día, pensado para ser leído
+     * por procesos externos a VSCode (ej. el script del recordatorio diario).
+     * No se puede reutilizar `context.globalState` para esto: VSCode lo guarda
+     * en una base SQLite interna (`state.vscdb`), no en un archivo plano.
+     */
+    getDailyStatusFilePath(): string {
+        return path.join(this.context.globalStorageUri.fsPath, 'daily-status.json');
+    }
+
+    /**
+     * Vuelve a escribir el archivo sidecar con los datos actuales, sin
+     * necesidad de que se complete una sesión. Útil para que quede fresco
+     * apenas se activa la extensión (ej. si el usuario cambió `minimumDailyMinutes`).
+     */
+    refreshDailyStatusFile(): void {
+        this.writeDailyStatusFile(this.getStats());
+    }
+
+    private writeDailyStatusFile(stats: UserStats): void {
+        try {
+            fs.mkdirSync(this.context.globalStorageUri.fsPath, { recursive: true });
+
+            const config = vscode.workspace.getConfiguration('productivityTimer');
+            const minimumDailyMinutes = config.get<number>('minimumDailyMinutes', 30);
+            const today = this.getTodayDateString();
+            const todayMinutes = this.getMinutesForDate(stats, today);
+
+            fs.writeFileSync(
+                this.getDailyStatusFilePath(),
+                JSON.stringify({ date: today, todayMinutes, minimumDailyMinutes })
+            );
+        } catch {
+            // No debe interrumpir el guardado de stats si falla la escritura del sidecar file.
+        }
     }
 
     async addSession(minutes: number): Promise<void> {

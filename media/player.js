@@ -16,6 +16,10 @@ function sendVolumeControl(command) {
 document.getElementById('btn-volume-down')?.addEventListener('click', () => sendVolumeControl('mediaVolumeDown'));
 document.getElementById('btn-volume-up')?.addEventListener('click', () => sendVolumeControl('mediaVolumeUp'));
 
+document.getElementById('btn-open-dashboard')?.addEventListener('click', () => {
+    vscode.postMessage({ command: 'openDashboard' });
+});
+
 function sendSessionControl(sessionId, action) {
     vscode.postMessage({ command: 'sessionControl', sessionId, action });
 }

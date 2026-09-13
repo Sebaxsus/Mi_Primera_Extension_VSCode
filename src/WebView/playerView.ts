@@ -32,6 +32,10 @@ export function getPlayerHtml(webview: vscode.Webview, extensionUri: vscode.Uri)
         </div>
 
         <p class="hint">Cada sesión se controla por separado. La destacada es la que Windows considera activa.</p>
+
+        <div class="player-footer">
+            <button id="btn-open-dashboard" title="Abrir Configuración">⚙️ Configuración</button>
+        </div>
     </body>
     <script nonce="${nonce}" src="${scriptUri}"></script>
     </html>`;

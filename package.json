@@ -55,6 +55,16 @@
         "command": "productivityTimer.testAlarm",
         "title": "🔊 Probar el Sonido de Alarma",
         "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.enableDailyReminder",
+        "title": "⏰ Activar Recordatorio Diario",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.disableDailyReminder",
+        "title": "⏰ Desactivar Recordatorio Diario",
+        "category": "Productivity Timer"
       }
     ],
     "viewsContainers": {
@@ -97,6 +107,11 @@
           "type": "number",
           "default": 5,
           "description": "Duración de la etapa de estiramiento en minutos"
+        },
+        "productivityTimer.dailyReminderTime": {
+          "type": "string",
+          "default": "20:00",
+          "description": "Hora (formato 24h HH:mm) del recordatorio diario de Task Scheduler, si está activado"
         },
         "productivityTimer.stretchVideos": {
           "type": "array",

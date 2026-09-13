@@ -51,6 +51,9 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
                 case 'mediaVolumeDown':
                     this.musicPlayer.mediaVolumeDown();
                     break;
+                case 'openDashboard':
+                    vscode.commands.executeCommand('productivityTimer.showStats');
+                    break;
             }
         });
 

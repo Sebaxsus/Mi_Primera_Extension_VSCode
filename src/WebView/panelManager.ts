@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import { DataManager } from '../dataManager';
 import { AlarmManager } from '../alarmManager';
 import { MotivationalQuotes } from '../motivationalQuotes';
-import { getStatsHtml, getDashboardData } from './dashboard';
+import { getStatsHtml, getDashboardData, DailyReminderStatus } from './dashboard';
 import { showToast } from '../notify';
 import { saveGeneralConfig, saveAlarmConfig } from '../configService';
+import { enableDailyReminder, disableDailyReminder, isDailyReminderEnabled } from '../dailyReminderManager';
 
 let currentPanel: vscode.WebviewPanel | undefined;
 let panelDeps: {
@@ -13,12 +14,18 @@ let panelDeps: {
     quotes: MotivationalQuotes;
 } | undefined;
 
+async function getDailyReminderStatus(): Promise<DailyReminderStatus> {
+    const config = vscode.workspace.getConfiguration('productivityTimer');
+    const enabled = await isDailyReminderEnabled();
+    return { enabled, time: config.get<string>('dailyReminderTime', '20:00') };
+}
+
 /**
  * Recalcula los datos del panel de Estadísticas y los empuja al webview ya
  * abierto vía `postMessage`, sin recrear el HTML (evita parpadeo y pérdida
  * de scroll/foco). No hace nada si el panel no está abierto.
  */
-export function refreshStatsPanel(dataManager: DataManager, alarmManager: AlarmManager, quotes: MotivationalQuotes): void {
+export async function refreshStatsPanel(dataManager: DataManager, alarmManager: AlarmManager, quotes: MotivationalQuotes): Promise<void> {
     if (!currentPanel) {
         return;
     }
@@ -28,8 +35,9 @@ export function refreshStatsPanel(dataManager: DataManager, alarmManager: AlarmM
     const today = new Date().toISOString().split('T')[0];
     const quote = quotes.getDailyQuote(today);
     const alarmData = alarmManager.getAlarmData();
+    const dailyReminder = await getDailyReminderStatus();
 
-    const data = getDashboardData(stats, todayMinutes, alarmData, quote);
+    const data = getDashboardData(stats, todayMinutes, alarmData, quote, dailyReminder);
     currentPanel.webview.postMessage({ command: 'refresh', data });
 }
 
@@ -37,12 +45,12 @@ export function refreshStatsPanel(dataManager: DataManager, alarmManager: AlarmM
  * Crea y muestra el panel de estadísticas del webview, incluyendo el registro
  * del canal de mensajes webview -> extensión.
  */
-export function createStatsPanel(
+export async function createStatsPanel(
     context: vscode.ExtensionContext,
     dataManager: DataManager,
     alarmManager: AlarmManager,
     quotes: MotivationalQuotes
-): void {
+): Promise<void> {
     panelDeps = { dataManager, alarmManager, quotes };
 
     if (currentPanel) {
@@ -57,6 +65,7 @@ export function createStatsPanel(
     const quote = quotes.getDailyQuote(today);
 
     const alarmData = alarmManager.getAlarmData();
+    const dailyReminder = await getDailyReminderStatus();
 
     const panel = vscode.window.createWebviewPanel(
         'productivityStats',
@@ -98,8 +107,19 @@ export function createStatsPanel(
                         minimumDailyMinutes: message.minimumDailyMinutes,
                         stretchDuration: message.stretchDuration
                     });
+                    dataManager.refreshDailyStatusFile();
                     showToast('✅ Tiempos guardados');
                     refreshStatsPanel(dataManager, alarmManager, quotes);
+                    return;
+
+                case 'enableDailyReminder':
+                    await enableDailyReminder(context, dataManager);
+                    await refreshStatsPanel(dataManager, alarmManager, quotes);
+                    return;
+
+                case 'disableDailyReminder':
+                    await disableDailyReminder(context);
+                    await refreshStatsPanel(dataManager, alarmManager, quotes);
                     return;
 
                 case 'pickAlarmFile': {
@@ -126,7 +146,8 @@ export function createStatsPanel(
         stats,
         todayMinutes,
         alarmData,
-        quote
+        quote,
+        dailyReminder
     );
 }
 

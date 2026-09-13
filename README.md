@@ -24,6 +24,13 @@ Un panel propio en la Activity Bar que funciona como el flyout multimedia de Win
 - Botones de volumen general del sistema
 - **Requiere Windows** (usa la API SMTC de `Windows.Media.Control`)
 
+### ⏰ Recordatorio Diario (Windows)
+Registra una tarea en el Task Scheduler de Windows para avisarte si no completaste tu sesión mínima del día, incluso con VS Code cerrado:
+- Comandos `⏰ Activar Recordatorio Diario` / `⏰ Desactivar Recordatorio Diario`, también disponibles desde el propio panel de Estadísticas
+- Antes de tocar el Task Scheduler, te muestra el comando exacto que se va a ejecutar y pide confirmación explícita
+- Se ejecuta solo si tienes sesión iniciada en Windows a la hora programada (no requiere guardar contraseña ni privilegios de administrador)
+- **Requiere Windows**
+
 ### 🔥 Sistema de Rachas
 - Contabiliza días consecutivos de programación
 - Establece un mínimo de minutos diarios para mantener tu racha
@@ -129,8 +136,10 @@ Accede a estos comandos desde la paleta de comandos (`Ctrl+Shift+P` o `Cmd+Shift
 - `⚙️ Configurar Temporizador`: Configura duraciones de trabajo, descanso, mínimo diario y estiramiento
 - `🔊 Configurar Sonido de Alarma`: Personaliza la alarma
 - `🔊 Probar el Sonido de Alarma`: Reproduce la alarma configurada para verificarla
+- `⏰ Activar Recordatorio Diario`: Registra el recordatorio diario en el Task Scheduler de Windows (pide confirmación antes de crear la tarea)
+- `⏰ Desactivar Recordatorio Diario`: Elimina la tarea programada
 
-El panel de reproductor (Windows) se accede desde su propio ícono en la Activity Bar, no requiere un comando.
+El panel de reproductor (Windows) se accede desde su propio ícono en la Activity Bar, no requiere un comando. Desde su footer también puedes abrir el panel de Estadísticas con el botón "⚙️ Configuración".
 
 ## ⚙️ Configuración
 
@@ -145,6 +154,7 @@ Puedes configurar la extensión desde:
   "productivityTimer.breakDuration": 10,
   "productivityTimer.minimumDailyMinutes": 30,
   "productivityTimer.stretchDuration": 5,
+  "productivityTimer.dailyReminderTime": "20:00",
   "productivityTimer.stretchVideos": [],
   "productivityTimer.alarmType": "local",
   "productivityTimer.alarmPath": "/ruta/al/archivo.mp3",
@@ -158,6 +168,7 @@ Puedes configurar la extensión desde:
 - `breakDuration`: Duración del descanso en minutos (por defecto: 10)
 - `minimumDailyMinutes`: Minutos mínimos para mantener racha (por defecto: 30)
 - `stretchDuration`: Duración de la etapa de estiramiento en minutos (por defecto: 5)
+- `dailyReminderTime`: Hora (formato 24h `HH:mm`) del recordatorio diario, si está activado (por defecto: "20:00")
 - `stretchVideos`: Lista de URLs de YouTube con rutinas de estiramiento; si está vacía, se usa la lista curada por defecto
 - `alarmType`: Tipo de alarma - "local", "youtube" o "spotify" (por defecto: "local")
 - `alarmPath`: Ruta del archivo o URL de YouTube
@@ -228,6 +239,12 @@ Haz clic en la barra de estado para:
 ### El panel de reproductor no aparece o no controla nada:
 1. Esta característica es exclusiva de Windows
 2. Necesita que al menos una app esté usando la sesión de medios de Windows (SMTC) — prueba reproducir algo en Spotify o el navegador primero
+
+### El recordatorio diario no muestra ninguna notificación:
+1. Esta característica es exclusiva de Windows
+2. Solo se dispara si a esa hora ya cumpliste el mínimo diario configurado — si ya trabajaste suficiente, es esperado que no aparezca nada
+3. Solo se ejecuta si tienes sesión iniciada en Windows a la hora programada (no funciona con la sesión bloqueada o cerrada)
+4. Verifica que la tarea esté registrada con `schtasks /query /tn ProductivityTimerDailyReminder`
 
 ## 🤝 Contribuciones
 

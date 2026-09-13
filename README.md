@@ -1,14 +1,28 @@
 # 🍅 Productivity Timer - Pomodoro & Motivación
 
-Una extensión completa de Visual Studio Code que te ayuda a mantener el enfoque, construir rachas de programación y mantenerte motivado con un sistema de gamificación.
+Una extensión completa de Visual Studio Code que te ayuda a mantener el enfoque, construir rachas de programación y mantenerte motivado con un sistema de gamificación — con estiramiento incluido y un panel de reproductor multimedia integrado.
 
 ## ✨ Características
 
 ### 🎯 Temporizador Pomodoro Personalizable
 - **Sesiones de trabajo**: Define cuánto tiempo quieres programar (por defecto 30 minutos)
 - **Descansos**: Establece períodos de descanso (por defecto 10 minutos)
+- **Estiramiento**: Al terminar un descanso, se ofrece una pausa de estiramiento (por defecto 5 minutos) con una rutina en video sugerida
 - **Límite diario**: Establece un objetivo de programación para el día
-- **Notificaciones**: Recibe alertas cuando termine cada sesión
+- **Notificaciones**: Avisos breves en la barra de estado al terminar cada etapa (no saturan el historial de Notificaciones de VS Code)
+
+### 🧘 Estiramiento con Rutinas en Video
+- Se ofrece automáticamente después de cada descanso
+- Sugiere un video corto de estiramiento (cuello, espalda, muñecas) elegido al azar de una lista curada, con confirmación antes de abrirlo en el navegador
+- Puedes reemplazar la lista por tus propios videos de YouTube
+
+### 🎚️ Panel de Reproductor (Windows)
+Un panel propio en la Activity Bar que funciona como el flyout multimedia de Windows:
+- Lista **todas** las aplicaciones que están reproduciendo audio a la vez (ej. Spotify y el navegador simultáneamente), no solo la que Windows considera "actual"
+- Controles independientes por sesión: anterior, pausar/reanudar (según el estado real) y siguiente
+- Puedes elegir manualmente cuál sesión destacar como activa haciendo click en ella
+- Botones de volumen general del sistema
+- **Requiere Windows** (usa la API SMTC de `Windows.Media.Control`)
 
 ### 🔥 Sistema de Rachas
 - Contabiliza días consecutivos de programación
@@ -26,18 +40,19 @@ Una extensión completa de Visual Studio Code que te ayuda a mantener el enfoque
 - Más de 40 frases inspiradoras para mantenerte motivado
 
 ### 🔊 Alarmas Personalizables
-Elige cómo quieres ser notificado al terminar cada sesión:
+Elige cómo quieres ser notificado al terminar cada etapa:
 
-1. **Archivo Local**: Usa cualquier archivo de audio (.mp3, .wav, .ogg, etc.) **[MediaPlayer Win][1]**
-2. **YouTube**: Reproduce música o sonidos desde YouTube (requiere yt-dlp + ffmpeg)
-3. **Spotify**: Controla Spotify para reproducir tu música favorita
+1. **Archivo Local**: Usa cualquier archivo de audio (.mp3, .wav, .ogg, etc.) — funcional y probado en Windows/macOS/Linux **[MediaPlayer Win][1]**
+2. **YouTube**: Reproduce música o sonidos desde YouTube (requiere yt-dlp + ffmpeg) — implementado, pero aún **experimental/sin probar de forma extensiva**
+3. **Spotify**: Intenta abrir/controlar Spotify — implementado de forma parcial y **experimental**; el flujo de autenticación guarda un token, pero la reproducción real todavía no lo consume, así que puede requerir reproducir manualmente
 
-### 📊 Estadísticas Detalladas
-- Tiempo total programado
-- Número de sesiones completadas
-- Rachas actuales y récords
-- Historial de sesiones
-- Logros desbloqueados
+> Ver `doc/current_status.md` para el detalle actualizado de qué está probado y qué sigue siendo experimental.
+
+### 📊 Panel de Estadísticas (editable y en vivo)
+- Tiempo total programado, sesiones completadas, rachas y logros desbloqueados
+- Historial de las últimas sesiones
+- La alarma (tipo/ruta/volumen) y los tiempos (trabajo/descanso/mínimo diario/estiramiento) se pueden editar directamente desde el propio panel
+- Se actualiza solo cuando cambian tus datos, sin tener que cerrarlo y volver a abrirlo
 
 ## 🚀 Instalación
 
@@ -99,6 +114,9 @@ sudo pip install yt-dlp
 - En macOS y Linux el control es automático
 - En Windows se mostrará una notificación para reproducir manualmente
 
+### Para el Panel de Reproductor:
+- Solo funciona en **Windows** (usa `SendKeys` y la API SMTC de `Windows.Media.Control`)
+
 ## 🎮 Comandos Disponibles
 
 Accede a estos comandos desde la paleta de comandos (`Ctrl+Shift+P` o `Cmd+Shift+P`):
@@ -107,21 +125,27 @@ Accede a estos comandos desde la paleta de comandos (`Ctrl+Shift+P` o `Cmd+Shift
 - `☕ Iniciar Descanso`: Inicia un período de descanso
 - `⏹️ Detener Temporizador`: Detiene el temporizador actual
 - `⏰ Establecer Límite Diario`: Define tu objetivo de programación para hoy
-- `📊 Ver Estadísticas y Rachas`: Muestra tus estadísticas completas
-- `⚙️ Configurar Temporizador`: Configura duraciones de trabajo y descanso
+- `📊 Ver Estadísticas y Rachas`: Muestra tus estadísticas completas (y te permite editar tu configuración ahí mismo)
+- `⚙️ Configurar Temporizador`: Configura duraciones de trabajo, descanso, mínimo diario y estiramiento
 - `🔊 Configurar Sonido de Alarma`: Personaliza la alarma
+- `🔊 Probar el Sonido de Alarma`: Reproduce la alarma configurada para verificarla
+
+El panel de reproductor (Windows) se accede desde su propio ícono en la Activity Bar, no requiere un comando.
 
 ## ⚙️ Configuración
 
 Puedes configurar la extensión desde:
 1. La paleta de comandos usando los comandos de configuración
-2. Directamente en la configuración de VS Code (`settings.json`):
+2. El propio panel de Estadísticas (`📊 Ver Estadísticas y Rachas`)
+3. Directamente en la configuración de VS Code (`settings.json`):
 
 ```json
 {
   "productivityTimer.workDuration": 30,
   "productivityTimer.breakDuration": 10,
   "productivityTimer.minimumDailyMinutes": 30,
+  "productivityTimer.stretchDuration": 5,
+  "productivityTimer.stretchVideos": [],
   "productivityTimer.alarmType": "local",
   "productivityTimer.alarmPath": "/ruta/al/archivo.mp3",
   "productivityTimer.volume": 50
@@ -133,6 +157,8 @@ Puedes configurar la extensión desde:
 - `workDuration`: Duración de la sesión de trabajo en minutos (por defecto: 30)
 - `breakDuration`: Duración del descanso en minutos (por defecto: 10)
 - `minimumDailyMinutes`: Minutos mínimos para mantener racha (por defecto: 30)
+- `stretchDuration`: Duración de la etapa de estiramiento en minutos (por defecto: 5)
+- `stretchVideos`: Lista de URLs de YouTube con rutinas de estiramiento; si está vacía, se usa la lista curada por defecto
 - `alarmType`: Tipo de alarma - "local", "youtube" o "spotify" (por defecto: "local")
 - `alarmPath`: Ruta del archivo o URL de YouTube
 - `volume`: Volumen de la alarma 0-100 (por defecto: 50)
@@ -142,7 +168,7 @@ Puedes configurar la extensión desde:
 ### Técnica Pomodoro Clásica:
 1. Configura 25 minutos de trabajo y 5 minutos de descanso
 2. Trabaja en sesiones enfocadas
-3. Descansa durante los breaks
+3. Descansa durante los breaks (y aprovecha para estirar)
 4. Después de 4 sesiones, toma un descanso más largo (15-30 min)
 
 ### Sesiones Personalizadas:
@@ -176,6 +202,7 @@ La extensión muestra información en la barra de estado:
 - Cuando está inactiva: `$(clock) Pomodoro | 🔥[racha] | ⭐[puntos]`
 - Durante el trabajo: `🍅 [tiempo] - Trabajando`
 - Durante el descanso: `☕ [tiempo] - Descansando`
+- Durante el estiramiento: `🧘 [tiempo] - Estirando`
 
 Haz clic en la barra de estado para:
 - Iniciar una sesión (cuando está inactivo)
@@ -186,7 +213,7 @@ Haz clic en la barra de estado para:
 ### La alarma no suena:
 1. Verifica que el archivo de audio existe y es accesible
 2. Para YouTube, asegúrate de tener yt-dlp y ffmpeg instalados
-3. Prueba la alarma usando el comando "Configurar Sonido de Alarma"
+3. Prueba la alarma usando el comando "Configurar Sonido de Alarma" o el botón "Probar" del panel de Estadísticas
 
 ### La racha no se actualiza:
 1. Verifica que has cumplido el mínimo de minutos diarios
@@ -198,16 +225,25 @@ Haz clic en la barra de estado para:
 2. Verifica que ffmpeg esté instalado: `ffmpeg -version`
 3. Asegúrate de que la URL de YouTube sea válida
 
+### El panel de reproductor no aparece o no controla nada:
+1. Esta característica es exclusiva de Windows
+2. Necesita que al menos una app esté usando la sesión de medios de Windows (SMTC) — prueba reproducir algo en Spotify o el navegador primero
+
 ## 🤝 Contribuciones
 
 Las contribuciones son bienvenidas. Si encuentras un bug o tienes una sugerencia:
 
 1. Abre un issue describiendo el problema o la mejora
 2. Si quieres contribuir código, haz un fork y envía un pull request
+3. Revisa `doc/CONTRIBUTING.md`, `doc/TODO.md` y `doc/FEATURES.md` para ver el estado y el roadmap actual del proyecto
 
 ## 📝 Licencia
 
 MIT License - Siéntete libre de usar y modificar esta extensión
+
+## 👤 Autor
+
+Creado y mantenido por **[Sebaxsus](https://github.com/Sebaxsus)**, con desarrollo asistido por Claude Code.
 
 ## 🎉 Agradecimientos
 

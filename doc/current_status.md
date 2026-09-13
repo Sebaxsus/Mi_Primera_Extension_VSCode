@@ -6,39 +6,46 @@
 
 ## Resumen general
 
-"Productivity Timer" es una extensión de VSCode que implementa un temporizador tipo Pomodoro con seguimiento de rachas, puntos y logros, y un sistema de alarmas configurable (sonido local, YouTube o Spotify) para avisar el cambio entre etapas.
+"Productivity Timer" es una extensión de VSCode que implementa un temporizador tipo Pomodoro (trabajo → descanso → estiramiento) con seguimiento de rachas, puntos y logros, un sistema de alarmas configurable, y un panel de reproductor multimedia (Windows) integrado en la Activity Bar.
 
 ## Funcionalidades completas
 
-- **Timer/Pomodoro** (`src/timer.ts`): estados `IDLE`, `WORKING`, `BREAK`, `DAILY_LIMIT`; cuenta regresiva en la barra de estado; comandos para iniciar sesión de trabajo, iniciar descanso, detener el temporizador y establecer el límite diario; encadena preguntas al usuario ("¿iniciar descanso?", "¿otra sesión?") al terminar cada etapa.
-- **Rachas, puntos y logros** (`src/dataManager.ts`, `src/WebView/achievementsManager.ts`): cálculo de racha diaria, sistema de puntos y 9 logros desbloqueables, usados en el panel de estadísticas (`src/WebView/dashboard.ts`).
+- **Timer/Pomodoro** (`src/timer.ts`): estados `IDLE`, `WORKING`, `BREAK`, `STRETCHING`, `DAILY_LIMIT`. Cuenta regresiva en la barra de estado; encadena preguntas al usuario al terminar cada etapa (trabajo → ¿descanso?; descanso → ¿estiramiento? → ¿otra sesión?; estiramiento → ¿otra sesión?). `onTimerComplete`/`stopTimer` ya no tienen la condición de carrera original (guarda de reentrada `isFinishing`, estado capturado antes de resetear).
+- **Etapa de estiramiento** (`src/timer.ts`, `src/stretchVideos.ts`): duración configurable (`stretchDuration`), sugiere un video de una lista curada o de `stretchVideos` (config del usuario), con confirmación antes de `vscode.env.openExternal`.
+- **Rachas, puntos y logros** (`src/dataManager.ts`, `src/WebView/achievementsManager.ts`): cálculo de racha diaria, sistema de puntos y 9 logros desbloqueables.
 - **Frases motivacionales** (`src/motivationalQuotes.ts`): frase diaria mostrada al usuario.
 - **Alarma local** (`src/alarmManager.ts` + `src/musicPlayer.ts`):
-  - Windows: proceso PowerShell persistente (`src/player_bridge.ps1`) que usa `System.Windows.Media.MediaPlayer`, comunicado por JSON vía stdin/stdout. Ya **no depende de ffmpeg** como se planteaba en la idea original del proyecto.
+  - Windows: proceso PowerShell persistente (`src/player_bridge.ps1`) que usa `System.Windows.Media.MediaPlayer`, comunicado por JSON vía stdin/stdout. La ruta al script ya no está hardcodeada (se resuelve con `path.join(__dirname, ...)` + copia vía script `postcompile`).
   - macOS/Linux: `afplay` / `ffplay` / `mpg123` / `aplay` según disponibilidad.
+  - Se puede consultar si la alarma está sonando (`AlarmManager.isAlarmActive()`).
+- **Panel de Estadísticas editable y en vivo** (`src/WebView/panelManager.ts`, `dashboard.ts`, `media/dashboard.*`): HTML separado del TypeScript (CSP + nonce), formularios reales para la alarma (tipo/ruta/volumen, con selector de archivo nativo) y los 4 tiempos, guardado vía `src/configService.ts` (reutilizado también por los comandos nativos de configuración). Se refresca solo (vía `postMessage`) tras completar sesiones o guardar configuración, sin recargar el HTML.
+- **Panel de reproductor multi-sesión** (`src/WebView/playerView.ts`, `playerViewProvider.ts`, `media/player.*`, Windows-only): lista **todas** las sesiones de medios activas del sistema (`GetSessions()` de SMTC), no solo la que Windows considera "actual". Cada sesión tiene sus propios controles (anterior/pausar-reanudar como toggle/siguiente) vía los métodos propios de esa sesión SMTC (`TryPlayAsync`/`TryPauseAsync`/`TrySkipNextAsync`/`TrySkipPreviousAsync`). El volumen general sigue siendo un control global vía `SendKeys`. El usuario puede fijar manualmente cuál sesión se destaca como activa haciendo click en el ítem (fuera de los botones).
+- **Notificaciones no invasivas** (`src/notify.ts`): los avisos de puro feedback (sin botones) usan `vscode.window.setStatusBarMessage` en vez de `showInformationMessage`, por lo que se autodescartan y no quedan en el historial de Notificaciones de VSCode. Las preguntas Sí/No y los warnings/errores no se tocaron.
 
 ## Funcionalidades experimentales / sin probar
 
-- **Alarma vía YouTube**: implementada usando `yt-dlp | ffplay`, pero el propio `TODO.md` indica que aún no se probó en la práctica.
+- **Alarma vía YouTube**: implementada usando `yt-dlp | ffplay`, con validación de `ffplay` (no solo `ffmpeg`) y captura de `stderr`/código de salida de `yt-dlp` para mostrar errores concretos. Aún no se probó de punta a punta con el usuario.
 - **Alarma vía Spotify**: parcialmente implementada y sin probar de forma confiable.
   - Windows: abre el URI de Spotify (búsqueda) y envía la tecla Enter vía `SendKeys`, aprovechando que Spotify toma el foco al abrirse.
   - macOS: vía AppleScript.
   - Linux: vía dbus.
+  - El flujo OAuth (`Spotify/auth.ts`) obtiene y guarda un token, pero `playSpotify()` todavía no lo consume para reproducir — la reproducción real sigue siendo manual.
 
-**Nota de discrepancia**: `README.md` y `CHANGELOG.md` presentan Spotify y YouTube como integraciones terminadas. En la práctica, el código y el `TODO.md` interno indican que ambas siguen en fase experimental. Este documento es la fuente de verdad más actualizada al respecto.
+**Nota de discrepancia**: `README.md` ya fue actualizado para reflejar que YouTube y Spotify siguen en fase experimental. Este documento es la fuente de verdad más actualizada al respecto.
 
-## En refactor activo (cambios sin commitear al momento de este análisis)
+## Código exploratorio sin conectar
 
-- **Módulo Spotify en reestructuración**: `src/Spotify/playerManager.ts` contiene por ahora solo código comentado (una copia previa del flujo de configuración de Spotify), y `src/Spotify/Local_AND_pwsh.ts` (`SpotifyLocalController`) es código exploratorio que todavía no se importa ni se usa desde `src/extension.ts`.
-- **Extracción de estilos del WebView**: `src/WebView/index.css` (archivo nuevo) extrae a una hoja de estilos aparte el CSS que antes vivía embebido como string en `src/WebView/dashboard.ts`.
-- **Ajustes menores**: cambios de texto/etiquetas pendientes en `dashboard.ts`, comentario aclaratorio en `player_bridge.ps1`, y un `await` agregado a `saveSpotifyData` en `extension.ts`.
+- `src/Spotify/playerManager.ts` (solo código comentado) y `src/Spotify/Local_AND_pwsh.ts` (`SpotifyLocalController`, incluye el enfoque de teclas multimedia que terminó reimplementándose directamente en `player_bridge.ps1`/`musicPlayer.ts` para el panel de reproductor) siguen sin importarse desde `extension.ts`. Pendiente decidir si se conectan o se eliminan.
 
-## Pendiente / no iniciado
+## Pendiente / no iniciado (roadmap, ver `doc/FEATURES.md`)
 
-- **Etapa de estiramiento**: no existe en el código actual (ni en `package.json`, ni en `timer.ts`, ni documentada en el README), a pesar de ser parte de la visión original del proyecto (trabajo → descanso → estiramiento). Hoy el timer solo maneja trabajo y descanso.
+- Recordatorio diario vía Task Scheduler de Windows (Feature #3).
+- Alarma/recordatorio personalizado de una sola vez (`setCustomReminder`, Feature #4) — pensado para avisar manualmente el reinicio de límites de tokens de IA.
+- Notificaciones bloqueantes que no interfieran con el bridge (Feature #5) — marcada explícitamente como pendiente de su propio plan de implementación antes de tocar código, por riesgo de conflicto con la comunicación asíncrona de `player_bridge.ps1`.
+- Volumen preciso por sesión en el panel de reproductor — investigado y descartado por ahora: requeriría Core Audio (`IAudioSessionManager2`/`ISimpleAudioVolume`, API COM clásica sin proyección WinRT), con riesgo real de crashear el proceso persistente compartido con la alarma.
+- Soporte macOS/Linux para el panel de reproductor y el recordatorio diario.
 
 ## Deuda técnica conocida
 
-- `MusicPlayer` tiene **hardcodeada una ruta absoluta** al script `player_bridge.ps1` en el disco del autor, lo que impide que el proyecto funcione en otra máquina sin editar el código.
-- El propio `timer.ts` tiene comentarios del autor admitiendo que el flujo de `stopTimer` / `onTimerComplete` es frágil y necesita revisión (ver sección FIXES de `TODO.md`).
-- No hay un estado explícito que indique si la alarma se está reproduciendo o no.
+- Código exploratorio de Spotify sin conectar (ver arriba).
+- README/CHANGELOG requieren revisión periódica para no quedar desalineados con el código a medida que se agreguen features (ya ocurrió una vez con Spotify/YouTube).

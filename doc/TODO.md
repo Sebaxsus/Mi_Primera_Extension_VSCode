@@ -27,7 +27,7 @@
 - [x] Implementar la etapa de "estiramiento" (nueva sección de timer, configuración y alarma asociada) — actualmente no existe en el código, solo trabajo y descanso. (Ver Feature #1 en `PRÓXIMAS FEATURES`.)
 - [ ] Conectar o eliminar `src/Spotify/playerManager.ts` y `src/Spotify/Local_AND_pwsh.ts` (código exploratorio no integrado al flujo principal).
 - [x] Quitar la ruta absoluta hardcodeada de `player_bridge.ps1` en `MusicPlayer` (rompe portabilidad entre máquinas). (Ahora se resuelve con `path.join(__dirname, 'player_bridge.ps1')` + script `postcompile` en `package.json` que copia el `.ps1` a `out/`.)
-- [ ] Actualizar README.md/CHANGELOG.md para reflejar que Spotify y YouTube siguen en fase experimental (ver `doc/current_status.md`).
+- [x] Actualizar README.md/CHANGELOG.md para reflejar que Spotify y YouTube siguen en fase experimental (ver `doc/current_status.md`). (README.md actualizado con la nota de experimental y link a `doc/current_status.md`.)
 
 
 ## NUEVAS (detectadas en pruebas F5, 2026-09-12)

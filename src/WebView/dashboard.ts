@@ -2,15 +2,23 @@ import type { AlarmData } from "../alarmManager"; // Se usa la plabra clave Type
 import type { UserStats, SessionData } from "../dataManager";
 // TypeScript 3.8+ permite import type para asegurar que la importación sea solo para comprobación de tipos y no genere código.
 import { getAchievementsHtml } from "./achievementsManager";
+import { getNonce } from "./getNonce";
 import * as vscode from 'vscode';
 
-export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: AlarmData, quote: string): string {
+export function getStatsHtml(
+    webview: vscode.Webview,
+    extensionUri: vscode.Uri,
+    stats: UserStats,
+    todayMinutes: number,
+    alarmData: AlarmData,
+    quote: string
+): string {
     const config = vscode.workspace.getConfiguration('productivityTimer');
-    
+
     const workMinutes = config.get<number>('workDuration', 30);
     const breakMinutes = config.get<number>('breakDuration', 10);
     const dailyMinimunMinutes = config.get<number>('minimumDailyMinutes', 30);
-    
+
     const recentSessions = stats.sessions.slice(-7).reverse();
     const sessionsHtml = recentSessions.map((session: SessionData) => `
         <tr>
@@ -20,135 +28,53 @@ export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: 
         </tr>
     `).join('');
 
+    const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'dashboard.css'));
+    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'dashboard.js'));
+    const nonce = getNonce();
+
     return `<!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Estadísticas</title>
-        <style>
-            body {
-                font-family: var(--vscode-font-family);
-                padding: 20px;
-                color: var(--vscode-foreground);
-                background-color: var(--vscode-editor-background);
-            }
-            .stat-card {
-                background: var(--vscode-editor-inactiveSelectionBackground);
-                border-radius: 8px;
-                padding: 20px;
-                margin: 15px 0;
-                border: 1px solid var(--vscode-panel-border);
-            }
-            .stat-header {
-                font-size: 24px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            .stat-value {
-                font-size: 36px;
-                font-weight: bold;
-                color: var(--vscode-textLink-foreground);
-            }
-            .stat-label {
-                font-size: 14px;
-                color: var(--vscode-descriptionForeground);
-            }
-            .grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin: 20px 0;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 10px;
-            }
-            th, td {
-                padding: 10px;
-                text-align: left;
-                border-bottom: 1px solid var(--vscode-panel-border);
-            }
-            th {
-                background: var(--vscode-editor-inactiveSelectionBackground);
-                font-weight: bold;
-            }
-            .achievement {
-                display: inline-block;
-                padding: 5px 15px;
-                margin: 5px;
-                background: var(--vscode-button-background);
-                color: var(--vscode-button-foreground);
-                border-radius: 15px;
-                font-size: 12px;
-            }
-            .progress-bar {
-                width: 100%;
-                height: 20px;
-                background: var(--vscode-editor-inactiveSelectionBackground);
-                border-radius: 10px;
-                overflow: hidden;
-                margin-top: 10px;
-            }
-            .progress-fill {
-                height: 100%;
-                background: linear-gradient(90deg, #4CAF50, #45a049);
-                transition: width 0.3s ease;
-            }
-            .inline-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0.25rem;
-                padding-bottom: 10px;
-                padding-inline: 5px;
-                justify-items: center;
-            }
-            @media (width > 1600px) {
-                .inline-list {
-                    flex-direction: row;
-                    align-content: center;
-                }
-            }
-        </style>
+        <link rel="stylesheet" href="${styleUri}">
     </head>
     <body>
         <h1>📊 Tus Estadísticas de Productividad</h1>
-        
+
         <div class="grid">
             <div class="stat-card">
                 <div class="stat-header">🔥 Racha Actual</div>
                 <div class="stat-value">${stats.currentStreak}</div>
                 <div class="stat-label">días consecutivos</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-header">🏆 Mejor Racha</div>
                 <div class="stat-value">${stats.longestStreak}</div>
                 <div class="stat-label">días consecutivos</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-header">⭐ Puntos Totales</div>
                 <div class="stat-value">${stats.points.toLocaleString()}</div>
                 <div class="stat-label">puntos acumulados</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-header">⏱️ Tiempo Total</div>
                 <div class="stat-value">${Math.floor(stats.totalMinutes / 60)}</div>
                 <div class="stat-label">horas programadas</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-header">📅 Hoy</div>
                 <div class="stat-value">${todayMinutes}</div>
                 <div class="stat-label">minutos trabajados</div>
             </div>
-            
+
             <div class="stat-card">
                 <div class="stat-header">🍅 Sesiones</div>
                 <div class="stat-value">${stats.totalSessions}</div>
@@ -166,20 +92,20 @@ export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: 
                     <div class="achievement">Volumen: ${alarmData.volume} %</div>
                     <div class="achievement">Tipo: ${alarmData.alarmType}</div>
                 </div>
-                <button class="achievement" onclick="solicitarPrueba()">Probar</button>
+                <button id="probar-alarma-btn" class="achievement">Probar</button>
             </div>
             <div class="stat-card">
-                <div class="stat-header">Trabajo</div>
+                <div class="stat-header">Tiempo de Trabajo</div>
                 <div class="stat-value">${workMinutes}</div>
                 <div class="stat-label">minutos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-header">Descanso</div>
+                <div class="stat-header">Tiempo de Descanso</div>
                 <div class="stat-value">${breakMinutes}</div>
                 <div class="stat-label">minutos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-header">Diario</div>
+                <div class="stat-header">Minimo Diario</div>
                 <div class="stat-value">${dailyMinimunMinutes}</div>
                 <div class="stat-label">minutos</div>
             </div>
@@ -213,15 +139,6 @@ export function getStatsHtml(stats: UserStats, todayMinutes: number, alarmData: 
             </p>
         </div>
     </body>
-    <script>
-        // Este código corre DENTRO del Webview
-        const vscode = acquireVsCodeApi();
-
-        function solicitarPrueba() {
-            vscode.postMessage({
-                command: 'ejecutarAlarma'
-            });
-        }
-    </script>
+    <script nonce="${nonce}" src="${scriptUri}"></script>
     </html>`;
 }

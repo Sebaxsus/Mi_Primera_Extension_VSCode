@@ -4,7 +4,7 @@ import { DataManager } from './dataManager';
 import { AlarmManager } from './alarmManager';
 import { MotivationalQuotes } from './motivationalQuotes';
 
-import { getStatsHtml } from './WebView/dashboard';
+import { createStatsPanel } from './WebView/panelManager';
 import { SpotifyAuth } from './Spotify/auth';
 
 let timer: Timer;
@@ -107,36 +107,7 @@ function showDailyMotivationalQuote() {
 }
 
 function showStatsPanel(context: vscode.ExtensionContext) {
-    const stats = dataManager.getStats();
-    const todayMinutes = dataManager.getTodayMinutes();
-
-    const today = new Date().toISOString().split('T')[0];
-    const quote = quotes.getDailyQuote(today);
-
-    const alarmData = alarmManager.getAlarmData();
-
-    const panel = vscode.window.createWebviewPanel(
-        'productivityStats',
-        '📊 Estadísticas de Productividad',
-        vscode.ViewColumn.One,
-        { enableScripts: true }
-    );
-
-    panel.webview.onDidReceiveMessage(
-        async message => {
-            switch (message.command) {
-                case 'ejecutarAlarma':
-                    // Aquí es donde el objeto de tu clase entra en acción
-                    await alarmManager.testAlarm();
-                    vscode.window.showInformationMessage('Alarma procesada');
-                    return;
-            }
-        },
-        undefined,
-        context.subscriptions // Limpieza de memoria al cerra
-    );
-
-    panel.webview.html = getStatsHtml(stats, todayMinutes, alarmData, quote);
+    createStatsPanel(context, dataManager, alarmManager, quotes);
 }
 
 async function showConfigurationPanel() {
@@ -276,8 +247,8 @@ async function configureSoundAlarm() {
                 spotify = new SpotifyAuth(client_id, client_secret, "http://127.0.0.1:5000/callback/");
 
                 const token = await spotify.auth();
-
-                dataManager.saveSpotifyData(token);
+                
+                await dataManager.saveSpotifyData(token);
             }
 
             const uri = await vscode.window.showInputBox({

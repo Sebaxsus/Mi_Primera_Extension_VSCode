@@ -18,8 +18,9 @@ export class Timer {
     private dataManager: DataManager;
     private dailyLimitSeconds: number = 0;
     private sessionStartTime: number = 0;
-    
-    // 
+    private isFinishing: boolean = false;
+
+    //
     private answer: string | undefined;
 
     constructor(
@@ -142,7 +143,10 @@ export class Timer {
             this.remainingSeconds--;
 
             if (this.remainingSeconds <= 0) {
+                clearInterval(this.interval!);
+                this.interval = null;
                 this.onTimerComplete();
+                return;
             }
 
             this.updateStatusBar();
@@ -152,17 +156,30 @@ export class Timer {
     }
 
     private async onTimerComplete(): Promise<void> {
+        if (this.isFinishing) {
+            return;
+        }
+        this.isFinishing = true;
+
+        try {
+            // Se captura el estado antes de llamar stopTimer(), que ahora
+            // siempre resetea this.state a IDLE.
+            const finishedState = this.state;
+            await this.onTimerCompleteFor(finishedState);
+        } finally {
+            this.isFinishing = false;
+        }
+    }
+
+    private async onTimerCompleteFor(finishedState: TimerState): Promise<void> {
         this.stopTimer();
 
         const elapsedMinutes = Math.floor((Date.now() - this.sessionStartTime) / 60000);
 
-        console.log('Contador Finalizado, Estado: %s', this.state);
+        console.log('Contador Finalizado, Estado: %s', finishedState);
 
-        switch (this.state) {
+        switch (finishedState) {
             case TimerState.WORKING:
-                // Cambiando el estado a IDLE, Con el fin de poder entrar en un descanso (Break)
-                this.state = TimerState.IDLE;
-
                 console.log("Ejecutando Alarma.");
                 // Esto bloque la ejecucion.
                 await this.alarmManager.playAlarm();
@@ -196,8 +213,6 @@ export class Timer {
                     '⏰ Descanso terminado. ¡Es hora de volver al trabajo!'
                 );
 
-                this.state = TimerState.IDLE;
-
                 this.answer = await vscode.window.showInformationMessage(
                     '¿Quieres iniciar otra sesion?',
                     'Sí',
@@ -215,19 +230,16 @@ export class Timer {
             case TimerState.DAILY_LIMIT:
                 await this.alarmManager.playAlarm();
                 await this.dataManager.addSession(elapsedMinutes);
-                
+
                 vscode.window.showInformationMessage(
                     `🎯 ¡Objetivo diario alcanzado! Trabajaste ${elapsedMinutes} minutos`
                 );
 
-                this.state = TimerState.IDLE;
                 break;
             default:
-                console.error("Entro a default (Error), Estado: %s", this.state);
+                console.error("Entro a default (Error), Estado: %s", finishedState);
         }
 
-        // Como esta fuera del Switch se ejecuta al final y rompe la ejecucion.
-        // this.state = TimerState.IDLE;
         this.updateStatusBar();
     }
 
@@ -246,11 +258,13 @@ export class Timer {
         }
 
         this.alarmManager.stopAlarm();
-        // this.state = TimerState.IDLE; // Esta linea Rompe el flujo de onTimerComplete Si se ejecuta stopTimer primero.
+        this.state = TimerState.IDLE;
         this.remainingSeconds = 0;
         this.updateStatusBar();
 
-        vscode.window.showInformationMessage('⏹️ Temporizador detenido');
+        if (!this.isFinishing) {
+            vscode.window.showInformationMessage('⏹️ Temporizador detenido');
+        }
     }
 
     private updateStatusBar(): void {

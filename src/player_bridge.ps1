@@ -1,6 +1,6 @@
 Add-Type -AssemblyName PresentationCore
 $player = New-Object System.Windows.Media.MediaPlayer
-$wshell = New-Object -ComObject WScript.Shell
+$wshell = New-Object -ComObject WScript.Shell # Se usa para simular un teclado virtual y aprimir teclas desde shell
 $lastStatus = "Stopped"
 
 function SendInfo($type, $msg) {

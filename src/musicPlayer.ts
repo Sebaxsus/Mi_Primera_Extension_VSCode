@@ -1,4 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
 
 /**
  * ### TODO
@@ -7,15 +8,19 @@ import { spawn, ChildProcess } from 'child_process';
  */
 export class MusicPlayer {
     private psProcess: ChildProcess | null = null;
+    private lastStatus: any = null;
 
     constructor() {
         this.initPlayer();
     }
 
     private initPlayer() {
-        // Iniciamos PowerShell en modo persistente
-        this.psProcess = spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', 'C:/Users/sebax/Desktop/Universidad/Proyectos_aleatorios/Mi_Primer_VSCodeExtension/vscode-productivity-timer/src/player_bridge.ps1']);
-        
+        // Iniciamos PowerShell en modo persistente.
+        // player_bridge.ps1 se copia junto al JS compilado (ver script "postcompile"),
+        // por lo que siempre vive al lado de este archivo, tanto en desarrollo como empaquetado.
+        const bridgePath = path.join(__dirname, 'player_bridge.ps1');
+        this.psProcess = spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', bridgePath]);
+
         // Escuchar mensajes provenientes de PowerShell
         this.psProcess.stdout?.on('data', (data) => {
             const output = data.toString().trim();
@@ -36,6 +41,7 @@ export class MusicPlayer {
                 console.log(`[${response.type}] [${response.timestamp}] ${response.msg}`);
                 break;
             case "status_update":
+                this.lastStatus = response;
                 console.log(`[Audio] Posición: ${response.position}s | Volumen: ${response.volume * 100}% | Buffering: ${response.buffering} | Estado: ${response.playerStatus}`);
                 break;
             case "currentSong":
@@ -81,7 +87,14 @@ export class MusicPlayer {
     }
 
     /**
-     * Pausa la ejecucion del reproductor.
+     * Pausa la ejecucion del reproductor sin cerrar la fuente actual.
+     */
+    public pause() {
+        this.sendCommand('pause');
+    }
+
+    /**
+     * Detiene la ejecucion del reproductor.
      */
     public stop() {
         this.sendCommand('stop');
@@ -92,6 +105,20 @@ export class MusicPlayer {
      */
     public status() {
         this.sendCommand('status');
+    }
+
+    /**
+     * Solicita al bridge la fuente actualmente cargada en el reproductor.
+     */
+    public currentSong() {
+        this.sendCommand('currentSong');
+    }
+
+    /**
+     * Indica si el ultimo `status_update` recibido reporta reproduccion activa.
+     */
+    public isPlaying(): boolean {
+        return this.lastStatus?.playerStatus === 'Playing';
     }
 
     execCommand(command: string) {

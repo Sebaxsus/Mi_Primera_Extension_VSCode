@@ -12,7 +12,7 @@ export interface SpotifyToken {
 export class SpotifyAuth {
     private clientId: string;
     private clientSecret: string;
-    private redirectUri: string = "https://127.0.0.1:8888/callback";
+    private redirectUri: string = "http://127.0.0.1:5000/callback/";
 
     constructor(clientId: string, clientSecret: string, redirectUri: string) {
         this.clientId = clientId;

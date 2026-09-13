@@ -99,7 +99,8 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "postcompile": "node -e \"require('fs').mkdirSync('out', { recursive: true }); require('fs').copyFileSync('src/player_bridge.ps1', 'out/player_bridge.ps1')\"",
+    "watch": "npm run postcompile && tsc -watch -p ./",
     "pretest": "npm run compile",
     "lint": "eslint src --ext ts"
   },

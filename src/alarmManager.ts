@@ -14,6 +14,14 @@ export interface AlarmData {
 export class AlarmManager {
     private currentProcess: child_process.ChildProcess | null = null;
     private musicPlayer: MusicPlayer = new MusicPlayer;
+    private playing: boolean = false;
+
+    /**
+     * Indica si la alarma esta sonando actualmente (local, YouTube o Spotify).
+     */
+    isAlarmActive(): boolean {
+        return this.playing;
+    }
 
     public getAlarmData(): AlarmData {
         const config = vscode.workspace.getConfiguration('productivityTimer');
@@ -32,12 +40,14 @@ export class AlarmManager {
     }
 
     async playAlarm(): Promise<void> {
-        
+
         const { alarmType, alarmPath, alarmName, volume } = this.getAlarmData();
-        
+
         vscode.window.showInformationMessage(
             `Reproduciendo la alarma! ${alarmName}`
         );
+
+        this.playing = true;
 
         try {
             switch (alarmType) {
@@ -57,6 +67,7 @@ export class AlarmManager {
             vscode.window.showErrorMessage(`Error al reproducir alarma: ${error}`);
             // Reproducir sonido del sistema como respaldo
             this.playSystemBeep();
+            this.playing = false;
         }
     }
 
@@ -125,13 +136,13 @@ export class AlarmManager {
             return;
         }
 
-        // Verificar si yt-dlp y ffmpeg están disponibles
+        // Verificar si yt-dlp y ffplay (del paquete ffmpeg) están disponibles
         const hasYtDlp = this.commandExists('yt-dlp');
-        const hasFfmpeg = this.commandExists('ffmpeg');
+        const hasFfplay = this.commandExists('ffplay');
 
-        if (!hasYtDlp || !hasFfmpeg) {
+        if (!hasYtDlp || !hasFfplay) {
             vscode.window.showWarningMessage(
-                'yt-dlp y ffmpeg son necesarios para reproducir desde YouTube. ' +
+                'yt-dlp y ffplay (incluido en ffmpeg) son necesarios para reproducir desde YouTube. ' +
                 'Por favor instálalos o usa un archivo local.'
             );
             this.playSystemBeep();
@@ -161,9 +172,24 @@ export class AlarmManager {
             }
 
 
+            let ytDlpError = '';
+            ytDlpProcess.stderr?.on('data', (data) => {
+                ytDlpError += data.toString();
+            });
+
             ytDlpProcess.on('error', () => {
                 vscode.window.showErrorMessage('Error al descargar audio de YouTube');
                 this.playSystemBeep();
+            });
+
+            ytDlpProcess.on('close', (code) => {
+                if (code !== 0) {
+                    vscode.window.showErrorMessage(
+                        `yt-dlp no pudo obtener el audio (código ${code}). ` +
+                        `Verifica que el link sea válido y esté disponible. ${ytDlpError.trim()}`
+                    );
+                    this.playSystemBeep();
+                }
             });
 
         } catch (error) {
@@ -241,11 +267,13 @@ export class AlarmManager {
 
     stopAlarm(): void {
         this.musicPlayer.stop();
-        
+
         if (this.currentProcess) {
             this.currentProcess.kill();
             this.currentProcess = null;
         }
+
+        this.playing = false;
     }
 
     async testAlarm(): Promise<void> {

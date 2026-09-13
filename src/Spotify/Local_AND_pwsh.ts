@@ -36,7 +36,7 @@ export class SpotifyLocalController {
      * Obtiene token básico (Funciona para usuarios Free)
      */
     private async getAccessToken() {
-        if (this.token) return this.token;
+        if (this.token) {return this.token;};
         const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
         const res = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
@@ -67,7 +67,7 @@ export class SpotifyLocalController {
         if (track) {
             console.log(`Reproduciendo: ${track.name} - ${track.artists[0].name}`);
             // Ejecutamos el URI nativo vía PowerShell
-            exec(`powershell.exe -Command "Start-Process 'spotify:track:${track.id}'"`);
+            exec(`powershell.exe -Command "Start-Process 'spotify:track:${track.id}' {ENTER}"`);
         } else {
             console.log("No se encontró la canción.");
         }

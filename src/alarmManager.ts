@@ -23,6 +23,15 @@ export class AlarmManager {
         return this.playing;
     }
 
+    /**
+     * Expone la instancia compartida de `MusicPlayer` (y su proceso de PowerShell
+     * persistente) para que otras features, como el panel de reproductor, la
+     * reutilicen en vez de levantar un segundo bridge.
+     */
+    getMusicPlayer(): MusicPlayer {
+        return this.musicPlayer;
+    }
+
     public getAlarmData(): AlarmData {
         const config = vscode.workspace.getConfiguration('productivityTimer');
         const alarmType = config.get<string>('alarmType', 'local');

@@ -1,16 +1,18 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+import { EventEmitter } from 'events';
 
 /**
  * ### TODO
  * - [ ] Consulta de estado: Puedes añadir un setInterval en Node que envíe el comando status cada segundo para actualizar una barra de progreso en tu interfaz de usuario.
  * - [ ] Manejo de errores: Si el archivo no existe o el formato no es compatible, PowerShell enviará un JSON con el error y Node podrá mostrar una alerta o hacer un fallback al systemBeep.
  */
-export class MusicPlayer {
+export class MusicPlayer extends EventEmitter {
     private psProcess: ChildProcess | null = null;
     private lastStatus: any = null;
 
     constructor() {
+        super();
         this.initPlayer();
     }
 
@@ -47,6 +49,9 @@ export class MusicPlayer {
             case "currentSong":
                 console.log(`Cancion Actual: ${response.currentSong}`);
                 break;
+            case "mediaInfo":
+                console.log(`[Media] ${response.title} - ${response.artist} (${response.status})`);
+                break;
             case "error":
                 console.error(`[Audio Error] ${response.message}`);
                 break;
@@ -54,6 +59,10 @@ export class MusicPlayer {
                 console.log("Respuesta pwsh process\nObjecto %o", response);
                 break;
         }
+
+        // Se emite toda respuesta tal cual, para que quien consuma la clase
+        // (ej. el panel de reproductor) pueda reaccionar sin duplicar el parsing.
+        this.emit('event', response);
     }
 
     private sendCommand(command: string, extra = {}) {
@@ -119,6 +128,37 @@ export class MusicPlayer {
      */
     public isPlaying(): boolean {
         return this.lastStatus?.playerStatus === 'Playing';
+    }
+
+    // --- Control global de medios: afecta al reproductor activo del sistema (Spotify, navegador, etc.),
+    // no al `$player` interno usado para la alarma. Ver src/player_bridge.ps1. ---
+
+    public mediaPlayPause() {
+        this.sendCommand('mediaPlayPause');
+    }
+
+    public mediaNext() {
+        this.sendCommand('mediaNext');
+    }
+
+    public mediaPrevious() {
+        this.sendCommand('mediaPrevious');
+    }
+
+    public mediaVolumeUp() {
+        this.sendCommand('mediaVolumeUp');
+    }
+
+    public mediaVolumeDown() {
+        this.sendCommand('mediaVolumeDown');
+    }
+
+    /**
+     * Solicita al bridge titulo/artista/estado de la sesion de medios activa del sistema (SMTC).
+     * La respuesta llega de forma asincrona como evento `mediaInfo`.
+     */
+    public mediaInfo() {
+        this.sendCommand('mediaInfo');
     }
 
     execCommand(command: string) {

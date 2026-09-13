@@ -57,6 +57,24 @@
         "category": "Productivity Timer"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "productivityTimerContainer",
+          "title": "Productivity Timer",
+          "icon": "media/player-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "productivityTimerContainer": [
+        {
+          "id": "productivityTimer.playerView",
+          "name": "Reproductor",
+          "type": "webview"
+        }
+      ]
+    },
     "configuration": {
       "title": "Productivity Timer",
       "properties": {

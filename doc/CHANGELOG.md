@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased] - 2026-09-12
+
+### ✨ Nuevas Características
+
+- 🎛️ Panel de reproductor tipo flyout de Windows en la activity bar
+  - Controles de play/pausa/siguiente/anterior/volumen (afectan al reproductor activo del sistema: Spotify, navegador, etc.)
+  - Título y artista de la canción actual en vivo, vía SMTC (`Windows.Media.Control`)
+  - Windows-only
+
+### 🔧 Mejoras
+
+- Panel de Estadísticas (WebView) refactorizado: HTML separado del TypeScript, estilos y script externos (`media/dashboard.css`/`dashboard.js`) con Content-Security-Policy y nonce
+- `MusicPlayer`: se corrigió la ruta hardcodeada de `player_bridge.ps1` (ahora portable entre máquinas) y se agregaron `pause()`, `currentSong()`, `isPlaying()`
+- Alarma de YouTube: validación de `ffplay` y mensajes de error concretos cuando `yt-dlp` falla, en vez de fallar en silencio
+- Estado de la alarma consultable (`AlarmManager.isAlarmActive()`)
+
+### 🐛 Correcciones
+
+- Timer: se corrigió una condición de carrera entre `stopTimer()` y la finalización normal de una etapa (`onTimerComplete`) que podía romper el flujo o duplicar el mensaje de "Temporizador detenido"
+- Spotify: se corrigió el `redirectUri` por defecto inconsistente en `Spotify/auth.ts`
+
 ## [1.0.0] - 2024-02-03
 
 ### ✨ Características Iniciales

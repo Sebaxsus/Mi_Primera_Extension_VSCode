@@ -3,6 +3,22 @@ $player = New-Object System.Windows.Media.MediaPlayer
 $wshell = New-Object -ComObject WScript.Shell # Se usa para simular un teclado virtual y aprimir teclas desde shell
 $lastStatus = "Stopped"
 
+# --- Soporte SMTC (Windows.Media.Control) para leer la sesion de medios activa del sistema ---
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
+    $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1'
+})[0]
+
+function Await($WinRtTask, $ResultType) {
+    $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
+    $netTask = $asTask.Invoke($null, @($WinRtTask))
+    $netTask.Wait(-1) | Out-Null
+    $netTask.Result
+}
+
+[Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime] | Out-Null
+$smtcManager = $null
+
 function SendInfo($type, $msg) {
     $timestamp = Get-Date -Format 'HH:mm:ss';
 
@@ -45,6 +61,32 @@ while ($true) {
             }
             "currentSong" {
                 Write-Host (@{event = "currentSong";currentSong = $player.Source.AbsoluteUri} | ConvertTo-Json -Compress)
+            }
+            # --- Control global de medios (afecta al reproductor activo del sistema, ej. Spotify o el navegador) ---
+            "mediaPlayPause"  { $wshell.SendKeys([char]179) } # VK_MEDIA_PLAY_PAUSE
+            "mediaNext"       { $wshell.SendKeys([char]176) } # VK_MEDIA_NEXT_TRACK
+            "mediaPrevious"   { $wshell.SendKeys([char]177) } # VK_MEDIA_PREV_TRACK
+            "mediaVolumeUp"   { $wshell.SendKeys([char]175) } # VK_VOLUME_UP
+            "mediaVolumeDown" { $wshell.SendKeys([char]174) } # VK_VOLUME_DOWN
+            "mediaInfo" {
+                $title = ""
+                $artist = ""
+                $status = "Unknown"
+                try {
+                    if ($null -eq $smtcManager) {
+                        $smtcManager = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+                    }
+                    $session = $smtcManager.GetCurrentSession()
+                    if ($session) {
+                        $info = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+                        $title = $info.Title
+                        $artist = $info.Artist
+                        $status = $session.GetPlaybackInfo().PlaybackStatus.ToString()
+                    }
+                } catch {
+                    # Sin sesion de medios disponible o fallo de SMTC: se responde con campos vacios en vez de propagar el error.
+                }
+                Write-Host (@{event = "mediaInfo"; title = $title; artist = $artist; status = $status} | ConvertTo-Json -Compress)
             }
             "exit"   { exit }
         }

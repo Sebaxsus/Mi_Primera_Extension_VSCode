@@ -5,6 +5,7 @@ import { AlarmManager } from './alarmManager';
 import { MotivationalQuotes } from './motivationalQuotes';
 
 import { createStatsPanel } from './WebView/panelManager';
+import { PlayerViewProvider } from './WebView/playerViewProvider';
 import { SpotifyAuth } from './Spotify/auth';
 
 let timer: Timer;
@@ -32,6 +33,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Inicializar timer
     timer = new Timer(statusBarItem, alarmManager, dataManager);
+
+    // Registrar el panel de reproductor (activity bar), reutilizando el mismo
+    // MusicPlayer/proceso de PowerShell que ya usa la alarma.
+    const playerProvider = new PlayerViewProvider(context.extensionUri, alarmManager.getMusicPlayer());
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider('productivityTimer.playerView', playerProvider)
+    );
 
     // Mostrar frase motivacional al iniciar
     showDailyMotivationalQuote();

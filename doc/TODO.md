@@ -37,7 +37,7 @@
 ## PRÓXIMAS FEATURES (roadmap definido, ver `doc/FEATURES.md`)
 
 - [ ] Estiramiento con rutinas en video: lista curada de videos de YouTube + config `stretchVideos` para reemplazarla, se abre al iniciar la etapa de estiramiento.
-- [ ] Panel de reproductor tipo flyout de Windows: `WebviewViewProvider` persistente, controles por teclas multimedia y metadata de canción vía SMTC (`Windows.Media.Control`) en `player_bridge.ps1`. Windows-only.
+- [x] Panel de reproductor tipo flyout de Windows: `WebviewViewProvider` persistente, controles por teclas multimedia y metadata de canción vía SMTC (`Windows.Media.Control`) en `player_bridge.ps1`. Windows-only. (Implementado y probado por el usuario vía F5: `src/WebView/playerView.ts`, `playerViewProvider.ts`, comandos `mediaPlayPause`/`mediaNext`/`mediaPrevious`/`mediaVolumeUp`/`mediaVolumeDown`/`mediaInfo` en `player_bridge.ps1`.)
 - [ ] Recordatorio diario vía Task Scheduler de Windows: script standalone que lee los datos de `dataManager.ts` y notifica si no se cumplió la meta diaria; comandos `enableDailyReminder`/`disableDailyReminder` con consentimiento explícito. Windows-only.
 - [ ] Alarma/recordatorio personalizado (`setCustomReminder`): generalizar `AlarmManager` para un recordatorio de una sola vez con duración/hora arbitraria, pensado para avisar manualmente el reinicio de límites de tokens de IA.
 

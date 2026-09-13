@@ -17,6 +17,9 @@
 
 - [x] En el timer cambiar el stopTimer, y onTimerFinish. (`onTimerComplete` ahora captura el estado antes de llamar `stopTimer()` y tiene guarda de reentrada `isFinishing`; `stopTimer()` ya puede resetear `state` a IDLE siempre sin romper el flujo de finalización. Ver `src/timer.ts`.)
 - [x] Incluir un Estado para la alarma con el fin de determinar si se esta ejecutando o no. (`AlarmManager.isAlarmActive()` + `MusicPlayer.isPlaying()`, ver `src/alarmManager.ts` y `src/musicPlayer.ts`.)
+- [ ] Los mensajes/notificaciones de feedback (`vscode.window.showInformationMessage` sin botones, usados en `timer.ts`/`alarmManager.ts`/`extension.ts`) no se cierran ni se limpian, y van poblando la sección de Notificaciones de VSCode (el ícono de campana) con historial acumulado sesión tras sesión.
+- [ ] Las notificaciones informativas deberían tener un TTL/auto-cierre explícito manejado por la extensión, en vez de depender del comportamiento por defecto de VSCode, para no saturar el historial de notificaciones (relacionado con el ítem anterior).
+- [ ] `productivityTimer.stretchDuration` (y `stretchVideos`) no está incluido en el flujo interactivo de `showConfigurationPanel()` (`extension.ts`) — hoy solo se puede cambiar editando `settings.json` directamente. Agregarlo al mismo flujo guiado que ya usan `workDuration`/`breakDuration`/`minimumDailyMinutes`, dado que es una extensión pensada para personalizarse a gusto del usuario.
 
 
 ## NUEVAS (detectadas en revisión de código, 2026-09-12)
@@ -36,10 +39,11 @@
 
 ## PRÓXIMAS FEATURES (roadmap definido, ver `doc/FEATURES.md`)
 
-- [ ] Estiramiento con rutinas en video: lista curada de videos de YouTube + config `stretchVideos` para reemplazarla, se abre al iniciar la etapa de estiramiento.
+- [x] Estiramiento con rutinas en video: lista curada de videos de YouTube + config `stretchVideos` para reemplazarla, se abre al iniciar la etapa de estiramiento. (Nuevo estado `STRETCHING` en `src/timer.ts`, encadenado tras el descanso; video elegido al azar de `src/stretchVideos.ts` u override del usuario, con confirmación antes de `vscode.env.openExternal`.)
 - [x] Panel de reproductor tipo flyout de Windows: `WebviewViewProvider` persistente, controles por teclas multimedia y metadata de canción vía SMTC (`Windows.Media.Control`) en `player_bridge.ps1`. Windows-only. (Implementado y probado por el usuario vía F5: `src/WebView/playerView.ts`, `playerViewProvider.ts`, comandos `mediaPlayPause`/`mediaNext`/`mediaPrevious`/`mediaVolumeUp`/`mediaVolumeDown`/`mediaInfo` en `player_bridge.ps1`.)
 - [ ] Recordatorio diario vía Task Scheduler de Windows: script standalone que lee los datos de `dataManager.ts` y notifica si no se cumplió la meta diaria; comandos `enableDailyReminder`/`disableDailyReminder` con consentimiento explícito. Windows-only.
 - [ ] Alarma/recordatorio personalizado (`setCustomReminder`): generalizar `AlarmManager` para un recordatorio de una sola vez con duración/hora arbitraria, pensado para avisar manualmente el reinicio de límites de tokens de IA.
+- [ ] Notificaciones bloqueantes que no interfieran con el bridge: las preguntas de sí/no deben seguir bloqueando el flujo del timer sin afectar la comunicación con `player_bridge.ps1` (ej. el polling del panel de reproductor). **Requiere su propio plan de implementación** antes de tocar código, por el riesgo de conflicto (ver `doc/FEATURES.md` #5).
 
 ### Investigación futura (no comprometida)
 

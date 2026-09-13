@@ -8,6 +8,10 @@
   - Controles de play/pausa/siguiente/anterior/volumen (afectan al reproductor activo del sistema: Spotify, navegador, etc.)
   - Título y artista de la canción actual en vivo, vía SMTC (`Windows.Media.Control`)
   - Windows-only
+- 🧘 Etapa de estiramiento en el ciclo del Pomodoro
+  - Se ofrece automáticamente al terminar un descanso
+  - Duración configurable (`productivityTimer.stretchDuration`)
+  - Sugiere un video de rutina de estiramiento (lista curada por defecto o `productivityTimer.stretchVideos`), con confirmación antes de abrirlo en el navegador
 
 ### 🔧 Mejoras
 

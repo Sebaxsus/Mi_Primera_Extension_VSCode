@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
 import { AlarmManager } from './alarmManager';
 import { DataManager } from './dataManager';
+import { DEFAULT_STRETCH_VIDEOS } from './stretchVideos';
 
 export enum TimerState {
     IDLE,
     WORKING,
     BREAK,
+    STRETCHING,
     DAILY_LIMIT
 }
 
@@ -95,6 +97,63 @@ export class Timer {
         vscode.window.showInformationMessage(
             `☕ Descanso iniciado: ${breakMinutes} minutos`
         );
+    }
+
+    /**
+     * Inicia la etapa de estiramiento. Sigue el mismo patrón que `startBreak()`.
+     */
+    startStretch(): void {
+        if (this.state !== TimerState.IDLE) {
+            vscode.window.showWarningMessage('Ya hay un temporizador en ejecución');
+            return;
+        }
+
+        const config = vscode.workspace.getConfiguration('productivityTimer');
+        const stretchMinutes = config.get<number>('stretchDuration', 5);
+
+        this.remainingSeconds = stretchMinutes * 60;
+        this.state = TimerState.STRETCHING;
+        this.sessionStartTime = Date.now();
+        this.startTimer();
+
+        vscode.window.showInformationMessage(
+            `🧘 Estiramiento iniciado: ${stretchMinutes} minutos`
+        );
+
+        this.offerStretchVideo();
+    }
+
+    /**
+     * Elige un video de estiramiento (config del usuario o lista por defecto)
+     * y pregunta si abrirlo en el navegador.
+     */
+    private async offerStretchVideo(): Promise<void> {
+        const video = this.pickStretchVideo();
+        if (!video) {
+            return;
+        }
+
+        const answer = await vscode.window.showInformationMessage(
+            '¿Quieres abrir un video con una rutina de estiramiento?',
+            'Sí',
+            'No'
+        );
+
+        if (answer === 'Sí') {
+            vscode.env.openExternal(vscode.Uri.parse(video));
+        }
+    }
+
+    private pickStretchVideo(): string | undefined {
+        const config = vscode.workspace.getConfiguration('productivityTimer');
+        const customVideos = config.get<string[]>('stretchVideos', []);
+        const videos = customVideos.length > 0 ? customVideos : DEFAULT_STRETCH_VIDEOS;
+
+        if (videos.length === 0) {
+            return undefined;
+        }
+
+        return videos[Math.floor(Math.random() * videos.length)];
     }
 
     async setDailyLimit(): Promise<void> {
@@ -214,7 +273,37 @@ export class Timer {
                 );
 
                 this.answer = await vscode.window.showInformationMessage(
-                    '¿Quieres iniciar otra sesion?',
+                    '¿Quieres hacer una pausa de estiramiento?',
+                    'Sí',
+                    'No'
+                );
+
+                if (this.answer === 'Sí') {
+                    this.startStretch();
+                } else {
+                    this.answer = await vscode.window.showInformationMessage(
+                        '¿Quieres iniciar otra sesion?',
+                        'Sí',
+                        'No'
+                    );
+
+                    if (this.answer === 'Sí') {
+                        this.startWork();
+                    }
+                }
+
+                this.alarmManager.stopAlarm();
+
+                break;
+
+            case TimerState.STRETCHING:
+                await this.alarmManager.playAlarm();
+                vscode.window.showInformationMessage(
+                    '🧘 Estiramiento terminado. ¡Buen trabajo cuidando tu cuerpo!'
+                );
+
+                this.answer = await vscode.window.showInformationMessage(
+                    '¿Quieres iniciar otra sesion de trabajo?',
                     'Sí',
                     'No'
                 );
@@ -292,6 +381,10 @@ export class Timer {
                 case TimerState.BREAK:
                     icon = '☕';
                     label = 'Descansando';
+                    break;
+                case TimerState.STRETCHING:
+                    icon = '🧘';
+                    label = 'Estirando';
                     break;
                 case TimerState.DAILY_LIMIT:
                     icon = '⏰';

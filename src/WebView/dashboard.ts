@@ -18,6 +18,7 @@ export function getStatsHtml(
     const workMinutes = config.get<number>('workDuration', 30);
     const breakMinutes = config.get<number>('breakDuration', 10);
     const dailyMinimunMinutes = config.get<number>('minimumDailyMinutes', 30);
+    const stretchMinutes = config.get<number>('stretchDuration', 5);
 
     const recentSessions = stats.sessions.slice(-7).reverse();
     const sessionsHtml = recentSessions.map((session: SessionData) => `
@@ -107,6 +108,11 @@ export function getStatsHtml(
             <div class="stat-card">
                 <div class="stat-header">Minimo Diario</div>
                 <div class="stat-value">${dailyMinimunMinutes}</div>
+                <div class="stat-label">minutos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">Tiempo de Estiramiento</div>
+                <div class="stat-value">${stretchMinutes}</div>
                 <div class="stat-label">minutos</div>
             </div>
         </div>

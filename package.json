@@ -93,6 +93,17 @@
           "default": 30,
           "description": "Minutos mínimos diarios para mantener racha"
         },
+        "productivityTimer.stretchDuration": {
+          "type": "number",
+          "default": 5,
+          "description": "Duración de la etapa de estiramiento en minutos"
+        },
+        "productivityTimer.stretchVideos": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "URLs de YouTube con rutinas de estiramiento. Si está vacía, se usa la lista curada por defecto de la extensión."
+        },
         "productivityTimer.alarmType": {
           "type": "string",
           "enum": ["local", "youtube", "spotify"],

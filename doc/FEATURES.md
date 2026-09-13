@@ -66,3 +66,19 @@
 - Nuevo comando `productivityTimer.setCustomReminder` con un input box para que el usuario ingrese la duración (ej. "3 horas") o la hora puntual.
 
 **Fuera de alcance ahora**: automatizar la lectura del tiempo real de reinicio de tokens de una IA (no existe API pública para esto; alternativas como leer archivos de estado no documentados o automatizar la UI de otra aplicación se consideran poco confiables o invasivas). Se deja como idea de investigación futura, no como tarea comprometida.
+
+---
+
+## 5. Notificaciones bloqueantes que no interfieran con el bridge
+
+> ⚠️ Detectada en pruebas F5 (2026-09-12). **Requiere su propio plan de implementación** antes de tocar código — se marca aquí solo como definición inicial, dado el riesgo de conflicto con la comunicación asíncrona del bridge de PowerShell.
+
+**Objetivo**: las notificaciones que necesitan una respuesta del usuario (ej. "¿Quieres iniciar un descanso?", "¿Abrir video de estiramiento?") deben bloquear el flujo del timer (como ya ocurre hoy, vía `await showInformationMessage(...)`) **sin** bloquear ni degradar la comunicación con el proceso persistente de PowerShell (`player_bridge.ps1`) — por ejemplo, el polling de `mediaInfo()` del panel de reproductor (`src/WebView/playerViewProvider.ts`) no debería quedar congelado mientras el usuario tiene un diálogo de sí/no pendiente.
+
+**Por qué es conflictiva**: Node.js es de un solo hilo — un `await` sobre un diálogo de VSCode no debería bloquear el event loop en teoría (las promesas de la API de VSCode no son bloqueantes a nivel de proceso), pero hay que verificar con cuidado que no haya algún punto donde el flujo del `Timer`/`AlarmManager` termine serializando accidentalmente el acceso al `MusicPlayer` compartido (ej. si se reutiliza una única cola de comandos o el mismo `stdin` sin proteger contra escrituras concurrentes desde dos features distintas al mismo tiempo).
+
+**Qué habría que investigar/construir** (a definir en el plan dedicado):
+- Confirmar (con pruebas) si hoy ya hay o no interferencia real entre un diálogo pendiente y el polling del reproductor.
+- Si la hay, diseñar un mecanismo de cola o de prioridad para los comandos enviados a `player_bridge.ps1` (ej. que las preguntas de sí/no no dependan de ningún round-trip con el bridge, y que el polling siga corriendo en paralelo sin esperar al diálogo).
+
+**Alcance/limitaciones**: no se compromete ningún diseño concreto todavía — esta entrada es solo el registro de la preocupación para no perderla, hasta que se planifique en detalle.

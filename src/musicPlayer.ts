@@ -52,6 +52,9 @@ export class MusicPlayer extends EventEmitter {
             case "mediaInfo":
                 console.log(`[Media] ${response.title} - ${response.artist} (${response.status})`);
                 break;
+            case "mediaSessions":
+                console.log(`[Media] ${response.sessions?.length ?? 0} sesion(es) activa(s)`);
+                break;
             case "error":
                 console.error(`[Audio Error] ${response.message}`);
                 break;
@@ -159,6 +162,22 @@ export class MusicPlayer extends EventEmitter {
      */
     public mediaInfo() {
         this.sendCommand('mediaInfo');
+    }
+
+    /**
+     * Solicita al bridge la lista completa de sesiones de medios activas (SMTC),
+     * incluyendo cuál es la activa según Windows. Respuesta asincrona como evento `mediaSessions`.
+     */
+    public mediaSessions() {
+        this.sendCommand('mediaSessions');
+    }
+
+    /**
+     * Controla una sesion de medios puntual (identificada por su `sessionId`,
+     * devuelto en `mediaSessions`), a diferencia de las teclas multimedia globales.
+     */
+    public sessionControl(sessionId: string, action: 'play' | 'pause' | 'next' | 'previous') {
+        this.sendCommand('sessionControl', { sessionId, action });
     }
 
     execCommand(command: string) {

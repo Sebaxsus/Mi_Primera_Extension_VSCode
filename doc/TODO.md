@@ -17,14 +17,14 @@
 
 - [x] En el timer cambiar el stopTimer, y onTimerFinish. (`onTimerComplete` ahora captura el estado antes de llamar `stopTimer()` y tiene guarda de reentrada `isFinishing`; `stopTimer()` ya puede resetear `state` a IDLE siempre sin romper el flujo de finalización. Ver `src/timer.ts`.)
 - [x] Incluir un Estado para la alarma con el fin de determinar si se esta ejecutando o no. (`AlarmManager.isAlarmActive()` + `MusicPlayer.isPlaying()`, ver `src/alarmManager.ts` y `src/musicPlayer.ts`.)
-- [ ] Los mensajes/notificaciones de feedback (`vscode.window.showInformationMessage` sin botones, usados en `timer.ts`/`alarmManager.ts`/`extension.ts`) no se cierran ni se limpian, y van poblando la sección de Notificaciones de VSCode (el ícono de campana) con historial acumulado sesión tras sesión.
-- [ ] Las notificaciones informativas deberían tener un TTL/auto-cierre explícito manejado por la extensión, en vez de depender del comportamiento por defecto de VSCode, para no saturar el historial de notificaciones (relacionado con el ítem anterior).
-- [ ] `productivityTimer.stretchDuration` (y `stretchVideos`) no está incluido en el flujo interactivo de `showConfigurationPanel()` (`extension.ts`) — hoy solo se puede cambiar editando `settings.json` directamente. Agregarlo al mismo flujo guiado que ya usan `workDuration`/`breakDuration`/`minimumDailyMinutes`, dado que es una extensión pensada para personalizarse a gusto del usuario.
+- [x] Los mensajes/notificaciones de feedback (`vscode.window.showInformationMessage` sin botones, usados en `timer.ts`/`alarmManager.ts`/`extension.ts`) no se cierran ni se limpian, y van poblando la sección de Notificaciones de VSCode (el ícono de campana) con historial acumulado sesión tras sesión. (Reemplazados por `showToast()` en `src/notify.ts`, que usa `setStatusBarMessage` — se autodescarta y no aparece en el historial. Las preguntas Sí/No y los warnings/errores quedaron igual.)
+- [x] Las notificaciones informativas deberían tener un TTL/auto-cierre explícito manejado por la extensión, en vez de depender del comportamiento por defecto de VSCode, para no saturar el historial de notificaciones. (Resuelto junto con el ítem anterior — `showToast()` recibe un `timeoutMs`.)
+- [x] `productivityTimer.stretchDuration` (y `stretchVideos`) no está incluido en el flujo interactivo de `showConfigurationPanel()` (`extension.ts`) — hoy solo se puede cambiar editando `settings.json` directamente. (Agregado al mismo flujo guiado, y también editable desde el propio panel de Estadísticas — ver `NUEVAS` de pruebas F5.)
 
 
 ## NUEVAS (detectadas en revisión de código, 2026-09-12)
 
-- [ ] Implementar la etapa de "estiramiento" (nueva sección de timer, configuración y alarma asociada) — actualmente no existe en el código, solo trabajo y descanso.
+- [x] Implementar la etapa de "estiramiento" (nueva sección de timer, configuración y alarma asociada) — actualmente no existe en el código, solo trabajo y descanso. (Ver Feature #1 en `PRÓXIMAS FEATURES`.)
 - [ ] Conectar o eliminar `src/Spotify/playerManager.ts` y `src/Spotify/Local_AND_pwsh.ts` (código exploratorio no integrado al flujo principal).
 - [x] Quitar la ruta absoluta hardcodeada de `player_bridge.ps1` en `MusicPlayer` (rompe portabilidad entre máquinas). (Ahora se resuelve con `path.join(__dirname, 'player_bridge.ps1')` + script `postcompile` en `package.json` que copia el `.ps1` a `out/`.)
 - [ ] Actualizar README.md/CHANGELOG.md para reflejar que Spotify y YouTube siguen en fase experimental (ver `doc/current_status.md`).
@@ -32,9 +32,9 @@
 
 ## NUEVAS (detectadas en pruebas F5, 2026-09-12)
 
-- [ ] El panel de Estadísticas (dashboard) no se actualiza cuando cambian los datos en vivo (completar el mínimo diario, terminar una sesión, etc.) — hay que agregar una función de refresco/actualización que se pueda invocar después de esos eventos, sin obligar al usuario a cerrar y reabrir el panel. Reutilizar `createStatsPanel`/`getStatsHtml` (`src/WebView/panelManager.ts`), guardando la referencia al `panel` para volver a asignar `panel.webview.html` o, mejor, enviar los datos actualizados vía `panel.webview.postMessage(...)` y refrescar el DOM desde `media/dashboard.js` sin recargar todo el HTML.
-- [ ] Arreglar la sección de Alarma del dashboard: hoy es de solo lectura (`dashboard.ts`), hay que permitir configurar el Tipo y la URI/ruta directamente ahí (inputs/`<select>` en el HTML + mensaje `postMessage` manejado en `panelManager.ts`). Reutilizar la lógica ya existente de `configureSoundAlarm()` en `extension.ts` en vez de duplicarla.
-- [ ] Agregar al dashboard controles para configurar los parámetros generales de la extensión (mínimo diario, tiempo de trabajo, tiempo de descanso) directamente desde el webview. Reutilizar la lógica ya existente de `showConfigurationPanel()` en `extension.ts` en vez de duplicarla.
+- [x] El panel de Estadísticas (dashboard) no se actualiza cuando cambian los datos en vivo (completar el mínimo diario, terminar una sesión, etc.). (`panelManager.refreshStatsPanel`/`refreshStatsPanelIfOpen` empujan los datos vía `postMessage` sin recargar el HTML; enganchado tras cada `addSession()` en `timer.ts` y tras cada guardado de config.)
+- [x] Arreglar la sección de Alarma del dashboard: hoy es de solo lectura (`dashboard.ts`). (Ahora es un formulario editable — tipo/ruta/volumen — con selector de archivo nativo, usando `src/configService.ts`.)
+- [x] Agregar al dashboard controles para configurar los parámetros generales de la extensión (mínimo diario, tiempo de trabajo, tiempo de descanso, estiramiento) directamente desde el webview. (Formulario en `dashboard.ts`, guardado vía `configService.saveGeneralConfig`.)
 
 
 ## PRÓXIMAS FEATURES (roadmap definido, ver `doc/FEATURES.md`)
@@ -44,6 +44,7 @@
 - [ ] Recordatorio diario vía Task Scheduler de Windows: script standalone que lee los datos de `dataManager.ts` y notifica si no se cumplió la meta diaria; comandos `enableDailyReminder`/`disableDailyReminder` con consentimiento explícito. Windows-only.
 - [ ] Alarma/recordatorio personalizado (`setCustomReminder`): generalizar `AlarmManager` para un recordatorio de una sola vez con duración/hora arbitraria, pensado para avisar manualmente el reinicio de límites de tokens de IA.
 - [ ] Notificaciones bloqueantes que no interfieran con el bridge: las preguntas de sí/no deben seguir bloqueando el flujo del timer sin afectar la comunicación con `player_bridge.ps1` (ej. el polling del panel de reproductor). **Requiere su propio plan de implementación** antes de tocar código, por el riesgo de conflicto (ver `doc/FEATURES.md` #5).
+- [x] Panel de reproductor multi-sesión: listar todas las sesiones de medios activas (`GetSessions()`), destacar visualmente la sesión activa, y controlar cada una (anterior/pausar-reanudar como toggle/siguiente) por separado vía SMTC. Volumen preciso por sesión queda fuera de alcance (requiere Core Audio, ver `doc/FEATURES.md` #6). Probado por el usuario vía F5; además se puede "fijar" manualmente cuál sesión se destaca como activa haciendo click en el ítem (fuera de los botones de control).
 
 ### Investigación futura (no comprometida)
 

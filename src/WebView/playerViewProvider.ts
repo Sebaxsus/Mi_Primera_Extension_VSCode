@@ -8,6 +8,9 @@ const POLLING_INTERVAL_MS = 2000;
  * Vista persistente (activity bar) con controles de reproducción tipo
  * "flyout" de Windows. Reutiliza la misma instancia de `MusicPlayer` (y su
  * proceso de PowerShell persistente) que usa `AlarmManager` para la alarma.
+ *
+ * Lista todas las sesiones de medios activas del sistema (SMTC), no solo la
+ * que Windows considera "actual", y permite controlar cada una por separado.
  */
 export class PlayerViewProvider implements vscode.WebviewViewProvider {
     private view: vscode.WebviewView | undefined;
@@ -18,12 +21,10 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
         private readonly musicPlayer: MusicPlayer
     ) {
         this.musicPlayer.on('event', (response: any) => {
-            if (response.event === 'mediaInfo') {
+            if (response.event === 'mediaSessions') {
                 this.view?.webview.postMessage({
-                    command: 'mediaInfo',
-                    title: response.title,
-                    artist: response.artist,
-                    status: response.status
+                    command: 'mediaSessions',
+                    sessions: response.sessions ?? []
                 });
             }
         });
@@ -41,14 +42,8 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.onDidReceiveMessage((message) => {
             switch (message.command) {
-                case 'mediaPlayPause':
-                    this.musicPlayer.mediaPlayPause();
-                    break;
-                case 'mediaNext':
-                    this.musicPlayer.mediaNext();
-                    break;
-                case 'mediaPrevious':
-                    this.musicPlayer.mediaPrevious();
+                case 'sessionControl':
+                    this.musicPlayer.sessionControl(message.sessionId, message.action);
                     break;
                 case 'mediaVolumeUp':
                     this.musicPlayer.mediaVolumeUp();
@@ -79,8 +74,8 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
         if (this.pollingInterval) {
             return;
         }
-        this.musicPlayer.mediaInfo();
-        this.pollingInterval = setInterval(() => this.musicPlayer.mediaInfo(), POLLING_INTERVAL_MS);
+        this.musicPlayer.mediaSessions();
+        this.pollingInterval = setInterval(() => this.musicPlayer.mediaSessions(), POLLING_INTERVAL_MS);
     }
 
     private stopPolling(): void {

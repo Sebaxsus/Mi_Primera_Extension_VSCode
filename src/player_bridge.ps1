@@ -18,6 +18,14 @@ function Await($WinRtTask, $ResultType) {
 
 [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime] | Out-Null
 $smtcManager = $null
+$sessionsById = @{} # Cache de la ultima lista de sesiones SMTC (id = SourceAppUserModelId), usada por "sessionControl"
+
+function Get-SmtcManager {
+    if ($null -eq $script:smtcManager) {
+        $script:smtcManager = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+    }
+    $script:smtcManager
+}
 
 function SendInfo($type, $msg) {
     $timestamp = Get-Date -Format 'HH:mm:ss';
@@ -73,10 +81,7 @@ while ($true) {
                 $artist = ""
                 $status = "Unknown"
                 try {
-                    if ($null -eq $smtcManager) {
-                        $smtcManager = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
-                    }
-                    $session = $smtcManager.GetCurrentSession()
+                    $session = (Get-SmtcManager).GetCurrentSession()
                     if ($session) {
                         $info = Await ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
                         $title = $info.Title
@@ -87,6 +92,61 @@ while ($true) {
                     # Sin sesion de medios disponible o fallo de SMTC: se responde con campos vacios en vez de propagar el error.
                 }
                 Write-Host (@{event = "mediaInfo"; title = $title; artist = $artist; status = $status} | ConvertTo-Json -Compress)
+            }
+            "mediaSessions" {
+                $sessionsList = @()
+                try {
+                    $manager = Get-SmtcManager
+                    $current = $manager.GetCurrentSession()
+                    $currentAppId = if ($current) { $current.SourceAppUserModelId } else { $null }
+
+                    $sessionsById.Clear()
+
+                    foreach ($s in $manager.GetSessions()) {
+                        $id = $s.SourceAppUserModelId
+                        $sessionsById[$id] = $s
+
+                        $title = ""
+                        $artist = ""
+                        $status = "Unknown"
+                        try {
+                            $info = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+                            $title = $info.Title
+                            $artist = $info.Artist
+                            $status = $s.GetPlaybackInfo().PlaybackStatus.ToString()
+                        } catch {
+                            # Esta sesion en particular no devolvio metadata: se deja con valores vacios.
+                        }
+
+                        $sessionsList += @{
+                            id = $id
+                            title = $title
+                            artist = $artist
+                            status = $status
+                            isActive = ($id -eq $currentAppId)
+                        }
+                    }
+                } catch {
+                    # Sin sesiones de medios disponibles o fallo de SMTC: se responde con lista vacia.
+                }
+                Write-Host (@{event = "mediaSessions"; sessions = $sessionsList} | ConvertTo-Json -Compress -Depth 4)
+            }
+            "sessionControl" {
+                $target = $sessionsById[$data.sessionId]
+                if ($null -eq $target) {
+                    Write-Host (@{event = "error"; message = "Sesion de medios no encontrada: $($data.sessionId)"} | ConvertTo-Json -Compress)
+                } else {
+                    try {
+                        switch ($data.action) {
+                            "play"     { Await ($target.TryPlayAsync()) ([bool]) | Out-Null }
+                            "pause"    { Await ($target.TryPauseAsync()) ([bool]) | Out-Null }
+                            "next"     { Await ($target.TrySkipNextAsync()) ([bool]) | Out-Null }
+                            "previous" { Await ($target.TrySkipPreviousAsync()) ([bool]) | Out-Null }
+                        }
+                    } catch {
+                        Write-Host (@{event = "error"; message = $_.Exception.Message} | ConvertTo-Json -Compress)
+                    }
+                }
             }
             "exit"   { exit }
         }

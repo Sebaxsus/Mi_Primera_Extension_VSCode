@@ -21,23 +21,17 @@ export function getPlayerHtml(webview: vscode.Webview, extensionUri: vscode.Uri)
         <link rel="stylesheet" href="${styleUri}">
     </head>
     <body>
-        <div id="now-playing" class="now-playing empty">
-            <div id="now-playing-title" class="title"></div>
-            <div id="now-playing-artist" class="artist"></div>
-        </div>
-
-        <div class="controls">
-            <button id="btn-previous" title="Anterior">⏮</button>
-            <button id="btn-play-pause" class="primary" title="Reproducir / Pausar">⏯</button>
-            <button id="btn-next" title="Siguiente">⏭</button>
+        <div id="sessions-list" class="sessions-list">
+            <p class="hint" id="empty-hint">No hay ninguna app reproduciendo audio en este momento.</p>
         </div>
 
         <div class="volume-controls">
+            <span class="volume-label">Volumen general</span>
             <button id="btn-volume-down" title="Bajar volumen">🔉</button>
             <button id="btn-volume-up" title="Subir volumen">🔊</button>
         </div>
 
-        <p class="hint">Controla el reproductor activo en Windows (Spotify, navegador, etc.)</p>
+        <p class="hint">Cada sesión se controla por separado. La destacada es la que Windows considera activa.</p>
     </body>
     <script nonce="${nonce}" src="${scriptUri}"></script>
     </html>`;

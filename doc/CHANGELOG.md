@@ -12,13 +12,16 @@
   - Se ofrece automáticamente al terminar un descanso
   - Duración configurable (`productivityTimer.stretchDuration`)
   - Sugiere un video de rutina de estiramiento (lista curada por defecto o `productivityTimer.stretchVideos`), con confirmación antes de abrirlo en el navegador
+- 🎚️ Panel de reproductor multi-sesión: lista todas las apps con audio activo (no solo la "actual" según Windows), cada una con sus propios controles (anterior/pausar-reanudar/siguiente); se puede elegir manualmente cuál destacar como activa haciendo click en la sesión
 
 ### 🔧 Mejoras
 
 - Panel de Estadísticas (WebView) refactorizado: HTML separado del TypeScript, estilos y script externos (`media/dashboard.css`/`dashboard.js`) con Content-Security-Policy y nonce
+- Panel de Estadísticas ahora permite editar la alarma (tipo/ruta/volumen) y los tiempos (trabajo/descanso/mínimo diario/estiramiento) directamente desde el panel, y se actualiza en vivo sin cerrarlo/reabrirlo
 - `MusicPlayer`: se corrigió la ruta hardcodeada de `player_bridge.ps1` (ahora portable entre máquinas) y se agregaron `pause()`, `currentSong()`, `isPlaying()`
 - Alarma de YouTube: validación de `ffplay` y mensajes de error concretos cuando `yt-dlp` falla, en vez de fallar en silencio
 - Estado de la alarma consultable (`AlarmManager.isAlarmActive()`)
+- Notificaciones de puro aviso (sin botones) ya no se acumulan en el historial de Notificaciones de VSCode: pasan a mostrarse como mensajes transitorios en la barra de estado
 
 ### 🐛 Correcciones
 

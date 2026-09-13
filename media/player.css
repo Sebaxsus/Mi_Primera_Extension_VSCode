@@ -5,12 +5,27 @@ body {
     background-color: var(--vscode-sideBar-background);
 }
 
-.now-playing {
+.sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin-bottom: 16px;
-    min-height: 2.6em;
 }
 
-.now-playing .title {
+.session-item {
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    cursor: pointer;
+}
+
+.session-item.active-session {
+    border-color: var(--vscode-focusBorder);
+    background: var(--vscode-list-activeSelectionBackground);
+}
+
+.session-info .title {
     font-weight: bold;
     font-size: 13px;
     overflow: hidden;
@@ -18,7 +33,7 @@ body {
     white-space: nowrap;
 }
 
-.now-playing .artist {
+.session-info .artist {
     font-size: 12px;
     color: var(--vscode-descriptionForeground);
     overflow: hidden;
@@ -26,48 +41,55 @@ body {
     white-space: nowrap;
 }
 
-.now-playing.empty .title,
-.now-playing.empty .artist {
-    display: none;
-}
-
-.controls {
+.session-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-top: 6px;
 }
 
-.controls button {
+.session-controls button {
     background: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     border: none;
     border-radius: 6px;
-    padding: 8px 10px;
+    padding: 6px 8px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
 }
 
-.controls button:hover {
+.session-controls button:hover {
     background: var(--vscode-button-secondaryHoverBackground);
-}
-
-.controls button.primary {
-    background: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    padding: 8px 14px;
-}
-
-.controls button.primary:hover {
-    background: var(--vscode-button-hoverBackground);
 }
 
 .volume-controls {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 8px;
+}
+
+.volume-controls .volume-label {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    margin-right: 4px;
+}
+
+.volume-controls button {
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.volume-controls button:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
 }
 
 .hint {

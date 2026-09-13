@@ -7,6 +7,8 @@ import { MotivationalQuotes } from './motivationalQuotes';
 import { createStatsPanel } from './WebView/panelManager';
 import { PlayerViewProvider } from './WebView/playerViewProvider';
 import { SpotifyAuth } from './Spotify/auth';
+import { showToast } from './notify';
+import { saveGeneralConfig, saveStretchVideos, saveAlarmConfig } from './configService';
 
 let timer: Timer;
 let dataManager: DataManager;
@@ -97,9 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
     const stats = dataManager.getStats();
 
     if (stats.currentStreak > 0 || stats.longestStreak > 0) {
-        vscode.window.showInformationMessage(
-            `¡Bienvenido de vuelta! 🔥 Racha actual: ${stats.currentStreak} días | ⭐ Puntos: ${stats.points}`
-        );
+        showToast(`¡Bienvenido de vuelta! 🔥 Racha actual: ${stats.currentStreak} días | ⭐ Puntos: ${stats.points}`, 8000);
     }
 }
 
@@ -130,10 +130,6 @@ async function showConfigurationPanel() {
         }
     });
 
-    if (workDuration) {
-        await config.update('workDuration', parseInt(workDuration), vscode.ConfigurationTarget.Global);
-    }
-
     const breakDuration = await vscode.window.showInputBox({
         prompt: 'Duración de descanso (minutos)',
         value: config.get<number>('breakDuration', 10).toString(),
@@ -142,10 +138,6 @@ async function showConfigurationPanel() {
             return (isNaN(num) || num <= 0) ? 'Ingresa un número válido' : null;
         }
     });
-
-    if (breakDuration) {
-        await config.update('breakDuration', parseInt(breakDuration), vscode.ConfigurationTarget.Global);
-    }
 
     const minimumDaily = await vscode.window.showInputBox({
         prompt: 'Minutos mínimos diarios para mantener racha',
@@ -156,11 +148,34 @@ async function showConfigurationPanel() {
         }
     });
 
-    if (minimumDaily) {
-        await config.update('minimumDailyMinutes', parseInt(minimumDaily), vscode.ConfigurationTarget.Global);
+    const stretchDuration = await vscode.window.showInputBox({
+        prompt: 'Duración de la etapa de estiramiento (minutos)',
+        value: config.get<number>('stretchDuration', 5).toString(),
+        validateInput: (value) => {
+            const num = parseInt(value);
+            return (isNaN(num) || num <= 0) ? 'Ingresa un número válido' : null;
+        }
+    });
+
+    const stretchVideos = await vscode.window.showInputBox({
+        prompt: 'URLs de rutinas de estiramiento en YouTube, separadas por coma (vacío = usar la lista por defecto)',
+        value: config.get<string[]>('stretchVideos', []).join(', '),
+        ignoreFocusOut: true
+    });
+
+    await saveGeneralConfig({
+        workDuration: workDuration ? parseInt(workDuration) : undefined,
+        breakDuration: breakDuration ? parseInt(breakDuration) : undefined,
+        minimumDailyMinutes: minimumDaily ? parseInt(minimumDaily) : undefined,
+        stretchDuration: stretchDuration ? parseInt(stretchDuration) : undefined
+    });
+
+    if (stretchVideos !== undefined) {
+        const urls = stretchVideos.split(',').map(s => s.trim()).filter(Boolean);
+        await saveStretchVideos(urls);
     }
 
-    vscode.window.showInformationMessage('✅ Configuración guardada correctamente');
+    showToast('✅ Configuración guardada correctamente');
 }
 
 async function configureSoundAlarm() {
@@ -179,7 +194,7 @@ async function configureSoundAlarm() {
         return;
     }
 
-    await config.update('alarmType', alarmType.value, vscode.ConfigurationTarget.Global);
+    await saveAlarmConfig({ alarmType: alarmType.value });
 
     if (alarmType.value === 'local') {
         const fileUri = await vscode.window.showOpenDialog({
@@ -191,8 +206,8 @@ async function configureSoundAlarm() {
         });
 
         if (fileUri && fileUri[0]) {
-            await config.update('alarmPath', fileUri[0].fsPath, vscode.ConfigurationTarget.Global);
-            vscode.window.showInformationMessage('✅ Archivo de audio configurado');
+            await saveAlarmConfig({ alarmPath: fileUri[0].fsPath });
+            showToast('✅ Archivo de audio configurado');
         }
     } else if (alarmType.value === 'youtube') {
         const url = await vscode.window.showInputBox({
@@ -207,10 +222,8 @@ async function configureSoundAlarm() {
         });
 
         if (url) {
-            await config.update('alarmPath', url, vscode.ConfigurationTarget.Global);
-            vscode.window.showInformationMessage(
-                '✅ URL de YouTube configurada. Asegúrate de tener yt-dlp y ffmpeg instalados.'
-            );
+            await saveAlarmConfig({ alarmPath: url });
+            showToast('✅ URL de YouTube configurada. Asegúrate de tener yt-dlp y ffmpeg instalados.', 8000);
         }
     } else if (alarmType.value === 'spotify') {
         const userHasSpotifyAPI = await vscode.window.showQuickPick([
@@ -265,8 +278,8 @@ async function configureSoundAlarm() {
                 ignoreFocusOut: true
             });
     
-            await config.update('alarmPath', uri || '', vscode.ConfigurationTarget.Global);
-            vscode.window.showInformationMessage('✅ Spotify configurado como alarma');
+            await saveAlarmConfig({ alarmPath: uri || '' });
+            showToast('✅ Spotify configurado como alarma');
         } else {
             vscode.window.showErrorMessage("❌ Spotify no puede ser configurado como reproductor de alarma\nPuede crear la API?\nDirigase a https://developer.spotify.com/ y verifique!");
         }
@@ -288,7 +301,7 @@ async function configureSoundAlarm() {
     });
 
     if (volume) {
-        await config.update('volume', parseInt(volume), vscode.ConfigurationTarget.Global);
+        await saveAlarmConfig({ volume: parseInt(volume) });
     }
 
     // Probar alarma

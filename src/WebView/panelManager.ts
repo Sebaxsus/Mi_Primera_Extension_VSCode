@@ -2,7 +2,36 @@ import * as vscode from 'vscode';
 import { DataManager } from '../dataManager';
 import { AlarmManager } from '../alarmManager';
 import { MotivationalQuotes } from '../motivationalQuotes';
-import { getStatsHtml } from './dashboard';
+import { getStatsHtml, getDashboardData } from './dashboard';
+import { showToast } from '../notify';
+import { saveGeneralConfig, saveAlarmConfig } from '../configService';
+
+let currentPanel: vscode.WebviewPanel | undefined;
+let panelDeps: {
+    dataManager: DataManager;
+    alarmManager: AlarmManager;
+    quotes: MotivationalQuotes;
+} | undefined;
+
+/**
+ * Recalcula los datos del panel de Estadísticas y los empuja al webview ya
+ * abierto vía `postMessage`, sin recrear el HTML (evita parpadeo y pérdida
+ * de scroll/foco). No hace nada si el panel no está abierto.
+ */
+export function refreshStatsPanel(dataManager: DataManager, alarmManager: AlarmManager, quotes: MotivationalQuotes): void {
+    if (!currentPanel) {
+        return;
+    }
+
+    const stats = dataManager.getStats();
+    const todayMinutes = dataManager.getTodayMinutes();
+    const today = new Date().toISOString().split('T')[0];
+    const quote = quotes.getDailyQuote(today);
+    const alarmData = alarmManager.getAlarmData();
+
+    const data = getDashboardData(stats, todayMinutes, alarmData, quote);
+    currentPanel.webview.postMessage({ command: 'refresh', data });
+}
 
 /**
  * Crea y muestra el panel de estadísticas del webview, incluyendo el registro
@@ -14,6 +43,13 @@ export function createStatsPanel(
     alarmManager: AlarmManager,
     quotes: MotivationalQuotes
 ): void {
+    panelDeps = { dataManager, alarmManager, quotes };
+
+    if (currentPanel) {
+        currentPanel.reveal(vscode.ViewColumn.One);
+        return;
+    }
+
     const stats = dataManager.getStats();
     const todayMinutes = dataManager.getTodayMinutes();
 
@@ -32,14 +68,52 @@ export function createStatsPanel(
         }
     );
 
+    currentPanel = panel;
+    panel.onDidDispose(() => {
+        currentPanel = undefined;
+    }, undefined, context.subscriptions);
+
     panel.webview.onDidReceiveMessage(
         async message => {
             switch (message.command) {
                 case 'ejecutarAlarma':
-                    // Aquí es donde el objeto de tu clase entra en acción
                     await alarmManager.testAlarm();
-                    vscode.window.showInformationMessage('Alarma procesada');
+                    showToast('Alarma procesada');
                     return;
+
+                case 'updateAlarmConfig':
+                    await saveAlarmConfig({
+                        alarmType: message.alarmType,
+                        alarmPath: message.alarmPath,
+                        volume: message.volume
+                    });
+                    showToast('✅ Alarma guardada');
+                    refreshStatsPanel(dataManager, alarmManager, quotes);
+                    return;
+
+                case 'updateGeneralConfig':
+                    await saveGeneralConfig({
+                        workDuration: message.workDuration,
+                        breakDuration: message.breakDuration,
+                        minimumDailyMinutes: message.minimumDailyMinutes,
+                        stretchDuration: message.stretchDuration
+                    });
+                    showToast('✅ Tiempos guardados');
+                    refreshStatsPanel(dataManager, alarmManager, quotes);
+                    return;
+
+                case 'pickAlarmFile': {
+                    const fileUri = await vscode.window.showOpenDialog({
+                        canSelectMany: false,
+                        filters: { 'Audio': ['mp3', 'wav', 'ogg', 'm4a', 'aac'] },
+                        openLabel: 'Seleccionar archivo de audio'
+                    });
+
+                    if (fileUri && fileUri[0]) {
+                        panel.webview.postMessage({ command: 'alarmFilePicked', path: fileUri[0].fsPath });
+                    }
+                    return;
+                }
             }
         },
         undefined,
@@ -54,4 +128,15 @@ export function createStatsPanel(
         alarmData,
         quote
     );
+}
+
+/**
+ * Refresca el panel activo (si existe) usando las dependencias registradas
+ * en la última llamada a `createStatsPanel`. Pensado para invocarse desde
+ * lugares que no tienen a mano `dataManager`/`alarmManager`/`quotes` (ej. `Timer`).
+ */
+export function refreshStatsPanelIfOpen(): void {
+    if (panelDeps) {
+        refreshStatsPanel(panelDeps.dataManager, panelDeps.alarmManager, panelDeps.quotes);
+    }
 }

@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { AlarmManager } from './alarmManager';
 import { DataManager } from './dataManager';
 import { DEFAULT_STRETCH_VIDEOS } from './stretchVideos';
+import { showToast } from './notify';
+import { refreshStatsPanelIfOpen } from './WebView/panelManager';
 
 export enum TimerState {
     IDLE,
@@ -64,9 +66,7 @@ export class Timer {
         this.sessionStartTime = Date.now();
         this.startTimer();
 
-        vscode.window.showInformationMessage(
-            `🍅 Sesión de trabajo iniciada: ${workMinutes} minutos`
-        );
+        showToast(`🍅 Sesión de trabajo iniciada: ${workMinutes} minutos`);
     }
 
     /**
@@ -94,9 +94,7 @@ export class Timer {
         this.sessionStartTime = Date.now();
         this.startTimer();
 
-        vscode.window.showInformationMessage(
-            `☕ Descanso iniciado: ${breakMinutes} minutos`
-        );
+        showToast(`☕ Descanso iniciado: ${breakMinutes} minutos`);
     }
 
     /**
@@ -116,9 +114,7 @@ export class Timer {
         this.sessionStartTime = Date.now();
         this.startTimer();
 
-        vscode.window.showInformationMessage(
-            `🧘 Estiramiento iniciado: ${stretchMinutes} minutos`
-        );
+        showToast(`🧘 Estiramiento iniciado: ${stretchMinutes} minutos`);
 
         this.offerStretchVideo();
     }
@@ -175,9 +171,7 @@ export class Timer {
             const remainingMinutes = Math.max(0, minutes - todayMinutes);
 
             if (remainingMinutes === 0) {
-                vscode.window.showInformationMessage(
-                    `✅ ¡Ya alcanzaste tu objetivo de ${minutes} minutos hoy!`
-                );
+                showToast(`✅ ¡Ya alcanzaste tu objetivo de ${minutes} minutos hoy!`);
                 return;
             }
 
@@ -187,9 +181,7 @@ export class Timer {
             this.sessionStartTime = Date.now();
             this.startTimer();
 
-            vscode.window.showInformationMessage(
-                `⏰ Límite diario establecido: ${remainingMinutes} minutos restantes`
-            );
+            showToast(`⏰ Límite diario establecido: ${remainingMinutes} minutos restantes`);
         }
     }
 
@@ -245,9 +237,10 @@ export class Timer {
                 // await this.dataManager.addSession(elapsedMinutes);
                 
                 const stats = this.dataManager.getStats();
-                vscode.window.showInformationMessage(
+                showToast(
                     `✅ ¡Sesión completada! +${elapsedMinutes} minutos | ` +
-                    `Puntos: ${stats.points} 🏆 | Racha: ${stats.currentStreak} días 🔥`
+                    `Puntos: ${stats.points} 🏆 | Racha: ${stats.currentStreak} días 🔥`,
+                    8000
                 );
 
                 // Preguntar si quiere descansar --- Si Bloquea la Exec
@@ -268,9 +261,7 @@ export class Timer {
 
             case TimerState.BREAK:
                 await this.alarmManager.playAlarm();
-                vscode.window.showInformationMessage(
-                    '⏰ Descanso terminado. ¡Es hora de volver al trabajo!'
-                );
+                showToast('⏰ Descanso terminado. ¡Es hora de volver al trabajo!');
 
                 this.answer = await vscode.window.showInformationMessage(
                     '¿Quieres hacer una pausa de estiramiento?',
@@ -298,9 +289,7 @@ export class Timer {
 
             case TimerState.STRETCHING:
                 await this.alarmManager.playAlarm();
-                vscode.window.showInformationMessage(
-                    '🧘 Estiramiento terminado. ¡Buen trabajo cuidando tu cuerpo!'
-                );
+                showToast('🧘 Estiramiento terminado. ¡Buen trabajo cuidando tu cuerpo!');
 
                 this.answer = await vscode.window.showInformationMessage(
                     '¿Quieres iniciar otra sesion de trabajo?',
@@ -319,10 +308,9 @@ export class Timer {
             case TimerState.DAILY_LIMIT:
                 await this.alarmManager.playAlarm();
                 await this.dataManager.addSession(elapsedMinutes);
+                refreshStatsPanelIfOpen();
 
-                vscode.window.showInformationMessage(
-                    `🎯 ¡Objetivo diario alcanzado! Trabajaste ${elapsedMinutes} minutos`
-                );
+                showToast(`🎯 ¡Objetivo diario alcanzado! Trabajaste ${elapsedMinutes} minutos`, 8000);
 
                 break;
             default:
@@ -343,6 +331,7 @@ export class Timer {
             const elapsedMinutes = Math.floor((Date.now() - this.sessionStartTime) / 60000);
             if (elapsedMinutes > 0) {
                 this.dataManager.addSession(elapsedMinutes);
+                refreshStatsPanelIfOpen();
             }
         }
 
@@ -352,7 +341,7 @@ export class Timer {
         this.updateStatusBar();
 
         if (!this.isFinishing) {
-            vscode.window.showInformationMessage('⏹️ Temporizador detenido');
+            showToast('⏹️ Temporizador detenido');
         }
     }
 

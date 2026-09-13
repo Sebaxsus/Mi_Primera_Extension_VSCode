@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { SpotifyToken } from './Spotify/auth';
+import { showToast } from './notify';
 
 export interface SessionData {
     date: string;
@@ -152,7 +153,7 @@ export class DataManager {
 
         if (answer === 'Sí') {
             await this.context.globalState.update(this.STATS_KEY, undefined);
-            vscode.window.showInformationMessage('Estadísticas reiniciadas correctamente');
+            showToast('Estadísticas reiniciadas correctamente');
         }
     }
 

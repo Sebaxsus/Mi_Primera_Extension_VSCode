@@ -3,6 +3,7 @@ import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { MusicPlayer } from './musicPlayer';
+import { showToast } from './notify';
 
 export interface AlarmData {
     alarmType: string,
@@ -52,9 +53,7 @@ export class AlarmManager {
 
         const { alarmType, alarmPath, alarmName, volume } = this.getAlarmData();
 
-        vscode.window.showInformationMessage(
-            `Reproduciendo la alarma! ${alarmName}`
-        );
+        showToast(`Reproduciendo la alarma! ${alarmName}`);
 
         this.playing = true;
 
@@ -214,9 +213,10 @@ export class AlarmManager {
             if (platform === 'win32') {
                 // Windows: intentar controlar Spotify via comando
                 this.musicPlayer.execCommand(`Start-Process '${trackUri}';$wshell.SendKeys('~');`);
-                vscode.window.showInformationMessage(
+                showToast(
                     'Por favor, reproduce manualmente la canción en Spotify. ' +
-                    'El control automático de Spotify requiere configuración adicional.'
+                    'El control automático de Spotify requiere configuración adicional.',
+                    8000
                 );
             } else if (platform === 'darwin') {
                 // macOS: usar AppleScript
@@ -231,7 +231,7 @@ export class AlarmManager {
                 if (this.commandExists('dbus-send')) {
                     child_process.exec('dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Play');
                 } else {
-                    vscode.window.showInformationMessage('Por favor, reproduce manualmente la canción en Spotify.');
+                    showToast('Por favor, reproduce manualmente la canción en Spotify.', 8000);
                 }
             }
         } catch (error) {
@@ -286,13 +286,13 @@ export class AlarmManager {
     }
 
     async testAlarm(): Promise<void> {
-        vscode.window.showInformationMessage('🔊 Probando alarma...');
+        showToast('🔊 Probando alarma...');
         await this.playAlarm();
-        
+
         // Detener después de 3 segundos
         setTimeout(() => {
             this.stopAlarm();
-            vscode.window.showInformationMessage('🔊 La prueba de audio ha finalizado.');
+            showToast('🔊 La prueba de audio ha finalizado.');
         }, 60000); // Modificado a un minuto | 60 seg | 60000 ms
     }
 

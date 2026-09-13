@@ -82,3 +82,21 @@
 - Si la hay, diseñar un mecanismo de cola o de prioridad para los comandos enviados a `player_bridge.ps1` (ej. que las preguntas de sí/no no dependan de ningún round-trip con el bridge, y que el polling siga corriendo en paralelo sin esperar al diálogo).
 
 **Alcance/limitaciones**: no se compromete ningún diseño concreto todavía — esta entrada es solo el registro de la preocupación para no perderla, hasta que se planifique en detalle.
+
+---
+
+## 6. Panel de reproductor multi-sesión (todas las apps con audio)
+
+**Objetivo**: extender el panel de reproductor (Feature #2) para mostrar **todas** las sesiones de medios activas del sistema (ej. Chrome y Spotify sonando a la vez), no solo la que Windows considera "actual", permitiendo controlar cada una por separado.
+
+**Qué se reutiliza**: la infraestructura completa de la Feature #2 (`player_bridge.ps1`, `MusicPlayer` como `EventEmitter`, `PlayerViewProvider`, `media/player.*`) — esto es una extensión, no un panel nuevo.
+
+**Qué hay que construir**:
+- `player_bridge.ps1`: nuevo comando `mediaSessions` que, además de `GetCurrentSession()` (ya usado por `mediaInfo`), llama `$smtcManager.GetSessions()` para listar **todas** las sesiones activas (título/artista/estado/`SourceAppUserModelId` de cada una), identificando cuál coincide con la sesión "activa" según Windows. Se cachean las sesiones devueltas (por id) para poder targetear una en particular en el siguiente comando.
+- Nuevo comando de control por sesión (ej. `sessionControl` con `sessionId` + `action`: `play`/`pause`/`next`/`previous`) que invoca los métodos propios de esa sesión de SMTC (`TryPlayAsync`/`TryPauseAsync`/`TrySkipNextAsync`/`TrySkipPreviousAsync`) — control preciso por app, a diferencia del `SendKeys` global que ya existe (que sigue afectando "lo que Windows considere activo", no una sesión puntual).
+- UI del panel: lista de sesiones (la activa primero, destacada con una clase CSS distinta — ej. borde/fondo diferenciado —, seguida del resto de `GetSessions()`); cada ítem de la lista tiene sus propios botones: anterior (⏮), pausar (⏸), reanudar (▶), siguiente (⏭).
+- Los botones de volumen general (`SendKeys` `VK_VOLUME_UP`/`VK_VOLUME_DOWN`) se mantienen como controles globales del panel (no por sesión).
+
+**Fuera de alcance (decisión explícita)**: volumen preciso por sesión/aplicación. Investigado y descartado por ahora: requiere Core Audio (`IAudioSessionManager2`/`ISimpleAudioVolume`), una API COM clásica sin proyección WinRT — a diferencia de SMTC, implica redefinir interfaces COM a mano en PowerShell (GUIDs exactos, orden de vtable exacto), con riesgo real de crashear el proceso persistente compartido con la alarma si algo se define mal, y sin mapeo confiable garantizado entre `SourceAppUserModelId` (SMTC) y `ProcessId` (Core Audio) para apps multi-proceso como los navegadores. Se documenta como investigación futura, no como tarea comprometida.
+
+**Alcance/limitaciones**: Windows-only, igual que la Feature #2.

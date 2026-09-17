@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Inicializar componentes
     dataManager = new DataManager(context);
-    alarmManager = new AlarmManager();
+    alarmManager = new AlarmManager(context);
     quotes = new MotivationalQuotes();
 
     dataManager.checkStreak();
@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(statusBarItem);
 
     // Inicializar timer
-    timer = new Timer(statusBarItem, alarmManager, dataManager);
+    timer = new Timer(statusBarItem, alarmManager, dataManager, context);
 
     // Registrar el panel de reproductor (activity bar), reutilizando el mismo
     // MusicPlayer/proceso de PowerShell que ya usa la alarma.
@@ -238,7 +238,12 @@ async function configureSoundAlarm() {
 
         if (url) {
             await saveAlarmConfig({ alarmPath: url });
-            showToast('✅ URL de YouTube configurada. Asegúrate de tener yt-dlp y ffmpeg instalados.', 8000);
+            showToast(
+                '✅ URL de YouTube configurada. yt-dlp se descarga y verifica automáticamente (con tu confirmación) ' +
+                'la primera vez que se use. En macOS/Linux además necesitas ffmpeg instalado para el audio; ' +
+                'para ver el video de estiramiento reproducido dentro de la extensión, ffmpeg hace falta en cualquier sistema operativo.',
+                10000
+            );
         }
     } else if (alarmType.value === 'spotify') {
         const userHasSpotifyAPI = await vscode.window.showQuickPick([

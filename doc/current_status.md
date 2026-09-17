@@ -1,6 +1,6 @@
 # Estado Actual del Proyecto
 
-> Última actualización: 2026-09-12
+> Última actualización: 2026-09-17
 >
 > Este documento describe qué funciona hoy en el código, qué está a medio implementar y qué falta, independientemente de lo que digan `README.md` o `CHANGELOG.md`. Se excluyen del análisis las carpetas `node_modules` y `out`.
 
@@ -24,7 +24,11 @@
 
 ## Funcionalidades experimentales / sin probar
 
-- **Alarma vía YouTube**: implementada usando `yt-dlp | ffplay`, con validación de `ffplay` (no solo `ffmpeg`) y captura de `stderr`/código de salida de `yt-dlp` para mostrar errores concretos. Aún no se probó de punta a punta con el usuario.
+- **Alarma vía YouTube y video de estiramiento** (`src/ytdlpManager.ts`, `src/alarmManager.ts`, `src/timer.ts`): yt-dlp ya no requiere instalación manual — la extensión descarga el binario oficial una vez (release fijada por tag + verificación de checksum SHA-256 + consentimiento explícito del usuario) y lo guarda en `globalStorage`. `getStreamUrl()` usa yt-dlp para resolver la URL directa del stream, sin necesidad de pipearlo a través de otro proceso.
+  - Para evitar el "Sign in to confirm you're not a bot" del cliente `web` por defecto de YouTube, se fuerzan los clientes `tv,ios,android` (`--extractor-args`); como esos clientes no siempre exponen audio-only, el formato de la alarma usa `bestaudio/best` (con fallback) en vez de `bestaudio` a secas.
+  - Alarma de audio: se prioriza `ffplay` si está en el PATH (cualquier sistema operativo); si no, en Windows cae al `MediaPlayer` .NET existente (sin ffmpeg), y en macOS/Linux se avisa que ffmpeg es necesario.
+  - Video de estiramiento (`Timer.playStretchVideo()`): si hay `ffplay` disponible, se abre en una ventana nativa externa con el video real; si no, se avisa cómo instalar ffmpeg y se cae al comportamiento anterior (abrir en el navegador).
+  - **Confirmado por el usuario** (2026-09-17): descarga real de yt-dlp con verificación de checksum, y reproducción de audio de la alarma en Windows. Pendiente de confirmar la reproducción del video de estiramiento con `ffplay`.
 - **Alarma vía Spotify**: parcialmente implementada y sin probar de forma confiable.
   - Windows: abre el URI de Spotify (búsqueda) y envía la tecla Enter vía `SendKeys`, aprovechando que Spotify toma el foco al abrirse.
   - macOS: vía AppleScript.

@@ -1,9 +1,14 @@
 import * as vscode from 'vscode';
+import { spawn } from 'child_process';
 import { AlarmManager } from './alarmManager';
 import { DataManager } from './dataManager';
 import { DEFAULT_STRETCH_VIDEOS } from './stretchVideos';
 import { showToast } from './notify';
 import { refreshStatsPanelIfOpen } from './WebView/panelManager';
+import { commandExists } from './utils';
+import { ensureYtDlp, getStreamUrl } from './ytdlpManager';
+
+const FFMPEG_DOWNLOAD_URL = 'https://ffmpeg.org/download.html';
 
 export enum TimerState {
     IDLE,
@@ -23,6 +28,7 @@ export class Timer {
     private dailyLimitSeconds: number = 0;
     private sessionStartTime: number = 0;
     private isFinishing: boolean = false;
+    private context: vscode.ExtensionContext;
 
     //
     private answer: string | undefined;
@@ -30,11 +36,13 @@ export class Timer {
     constructor(
         statusBarItem: vscode.StatusBarItem,
         alarmManager: AlarmManager,
-        dataManager: DataManager
+        dataManager: DataManager,
+        context: vscode.ExtensionContext
     ) {
         this.statusBarItem = statusBarItem;
         this.alarmManager = alarmManager;
         this.dataManager = dataManager;
+        this.context = context;
         this.updateStatusBar();
     }
 
@@ -130,12 +138,47 @@ export class Timer {
         }
 
         const answer = await vscode.window.showInformationMessage(
-            '¿Quieres abrir un video con una rutina de estiramiento?',
+            '¿Quieres ver un video con una rutina de estiramiento?',
             'Sí',
             'No'
         );
 
         if (answer === 'Sí') {
+            await this.playStretchVideo(video);
+        }
+    }
+
+    /**
+     * Reproduce el video de estiramiento en una ventana nativa vía `ffplay` si
+     * ffmpeg está instalado; si no, avisa cómo instalarlo y cae al comportamiento
+     * anterior (abrir el video en el navegador) para no dejar al usuario sin nada.
+     */
+    private async playStretchVideo(video: string): Promise<void> {
+        if (!commandExists('ffplay')) {
+            vscode.window.showWarningMessage(
+                `ffmpeg (que incluye ffplay) es necesario para reproducir el video de estiramiento dentro de la extensión. ` +
+                `Instálalo y agrégalo al PATH de tu sistema operativo: ${FFMPEG_DOWNLOAD_URL}`
+            );
+            vscode.env.openExternal(vscode.Uri.parse(video));
+            return;
+        }
+
+        const ytDlpPath = await ensureYtDlp(this.context);
+        if (!ytDlpPath) {
+            vscode.env.openExternal(vscode.Uri.parse(video));
+            return;
+        }
+
+        try {
+            const streamUrl = await getStreamUrl(ytDlpPath, video, 'best[ext=mp4]/best');
+            const ffplayProcess = spawn('ffplay', ['-autoexit', '-window_title', 'Estiramiento', streamUrl]);
+
+            ffplayProcess.on('error', () => {
+                vscode.window.showErrorMessage('Error al reproducir el video de estiramiento con ffplay');
+                vscode.env.openExternal(vscode.Uri.parse(video));
+            });
+        } catch (error) {
+            vscode.window.showErrorMessage(`Error al reproducir el video de estiramiento: ${error}`);
             vscode.env.openExternal(vscode.Uri.parse(video));
         }
     }

@@ -132,21 +132,32 @@ Ctrl+Shift+P → "Configurar Sonido de Alarma" → Probar alarma
 
 ### ¿Por qué YouTube no funciona?
 
-**Requisitos:**
-- yt-dlp instalado
-- ffmpeg instalado
+**yt-dlp** ya no hace falta instalarlo: la extensión lo descarga sola (pidiendo tu confirmación) la primera vez que lo necesita, y verifica su checksum SHA-256 antes de usarlo. Si cancelaste ese diálogo, vuelve a intentarlo y confirma.
+
+**ffmpeg** sigue siendo manual — necesario en macOS/Linux para el audio de la alarma, y en cualquier sistema operativo para ver el video de estiramiento reproducido dentro de la extensión (sin ffmpeg, el video se abre en el navegador como respaldo).
 
 **Verificar instalación:**
 ```bash
-yt-dlp --version
 ffmpeg -version
 ```
 
-Si falta alguno, instálalo siguiendo las instrucciones en INSTALL.md
+Si falta, instálalo siguiendo las instrucciones en INSTALL.md
+
+### ¿Cómo sé que la descarga de yt-dlp es segura?
+
+La extensión descarga siempre la misma release fijada (no "latest") desde GitHub, calcula el SHA-256 del archivo descargado y lo compara contra el hash oficial publicado por el proyecto yt-dlp para esa release exacta. Si no coincide, se descarta el archivo y nunca se ejecuta. El binario queda guardado en el `globalStorage` de la extensión, no en tu carpeta de proyecto ni en el `.vsix`.
+
+### No veo el proceso de ffplay en el panel de reproductor de la extensión (pero sí en el Mezclador de Volumen de Windows)
+
+Es esperado. El panel de reproductor de la extensión lista sesiones usando la API SMTC (`Windows.Media.Control`), que solo muestra apps que publican explícitamente su metadata de reproducción (Spotify, navegadores, etc.). `ffplay` es un reproductor mínimo que no implementa esa integración, por lo que es invisible para SMTC — pero el Mezclador de Volumen nativo de Windows sí lo detecta porque usa Core Audio a nivel de proceso, un mecanismo distinto en el que cualquier app que reproduce audio queda registrada sin necesidad de "adherirse" a nada.
 
 ### ¿Puedo usar URLs de YouTube Music?
 
 Sí, yt-dlp soporta YouTube Music. Solo copia la URL completa.
+
+### A veces YouTube pide "Sign in to confirm you're not a bot", ¿qué hago?
+
+La extensión ya intenta evitarlo probando varios clientes internos de YouTube (tv/ios/android) antes de rendirse. Si aun así aparece para un video puntual, prueba con otro link — pasar cookies de tu navegador para evitarlo en todos los casos no está soportado todavía.
 
 ### ¿Spotify funciona en todos los sistemas operativos?
 

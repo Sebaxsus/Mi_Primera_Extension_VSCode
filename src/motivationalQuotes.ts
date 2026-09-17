@@ -39,7 +39,27 @@ export class MotivationalQuotes {
         "💎 Cada día de código te hace más valioso",
         "🎓 El conocimiento que ganas hoy es tuyo para siempre",
         "🔧 Construye tus sueños con código",
-        "🎯 Mantén tu racha, alcanza tus metas"
+        "🎯 Mantén tu racha, alcanza tus metas",
+        "🐛 Cada error es una pista, no un obstáculo",
+        "🧠 Resolver problemas es tu superpoder, sigue entrenándolo",
+        "🛠️ Refactorizar hoy es programar más rápido mañana",
+        "📚 Leer código ajeno también es aprender a programar",
+        "🌙 Aunque sea de noche, cada commit cuenta",
+        "☀️ Empieza el día con una función bien escrita",
+        "🧩 Cada proyecto es un rompecabezas que sabes armar",
+        "🐢 Ir lento pero constante también es progreso real",
+        "🌳 Los buenos hábitos de hoy son el código limpio de mañana",
+        "🧪 Cada test que escribes protege tu yo del futuro",
+        "🎯 No necesitas ser perfecto, solo constante",
+        "🧭 Tu curiosidad es la mejor brújula para aprender",
+        "🤝 Ayudar a otro programador también te hace crecer",
+        "🌤️ Después de cada bug difícil llega la claridad",
+        "🚧 Estás construyendo algo, aunque hoy avances poco",
+        "🕰️ Cinco minutos de código valen más que cero",
+        "🧘 Descansar también es parte de programar bien",
+        "🌌 Cada proyecto empieza con una sola línea",
+        "🔍 La atención al detalle te distingue como programador",
+        "🎉 Celebra cada pequeño avance, no solo el resultado final"
     ];
 
     private usedIndices: Set<number> = new Set();

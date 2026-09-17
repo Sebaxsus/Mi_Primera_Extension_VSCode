@@ -109,7 +109,7 @@
 }
 ```
 
-**Nota**: Requiere yt-dlp y ffmpeg instalados
+**Nota**: yt-dlp se descarga y verifica automáticamente la primera vez que se usa (con tu confirmación). En Windows funciona sin instalar nada más; en macOS/Linux además necesitas ffmpeg instalado.
 
 ### Alarma con Spotify
 

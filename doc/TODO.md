@@ -1,9 +1,11 @@
 - [x] Agregar un sección de configuración a la Web View, Debe tener la info de La alarma, Tiempo de trabajo, Tiempo de descanso, Mínimo Diario. (Ya estaba implementado en `dashboard.ts`, bloque "Configuración Actual".)
 - [x] Implementar una función para reproducir música desde el pwsh. (Se corrigió la ruta hardcodeada de `player_bridge.ps1` en `musicPlayer.ts` — ver NUEVAS — y se agregaron los wrappers `pause()`/`currentSong()`/`isPlaying()` que ya soportaba el bridge pero no se exponían.)
-- [ ] Probar la función de YT. Pasos manuales (no se puede automatizar desde esta sesión):
-  1. Instalar `yt-dlp` y `ffmpeg` (incluye `ffplay`) y verificar que estén en el PATH.
-  2. Configurar `productivityTimer.alarmType` en `"youtube"` y `productivityTimer.alarmPath` con una URL válida de YouTube (comando "🔊 Configurar Sonido de Alarma").
-  3. Ejecutar "🔊 Probar el Sonido de Alarma" y confirmar que se escucha audio; si falla, ahora debería mostrar un error concreto (se agregó captura de `stderr`/código de salida de `yt-dlp`) en vez de fallar en silencio.
+- [x] Probar la función de YT (audio de la alarma). Confirmado por el usuario en Windows — ver `NUEVAS (detectadas en pruebas F5, 2026-09-17)` para los bugs que salieron y se corrigieron en el camino (`src/ytdlpManager.ts`, `src/alarmManager.ts`).
+- [ ] Probar el video de estiramiento reproducido dentro de la extensión (`Timer.playStretchVideo()`, ventana `ffplay`) y su fallback a abrir en el navegador cuando falta ffmpeg. Pasos manuales:
+  1. Tener `ffmpeg` instalado y en el PATH.
+  2. Terminar un descanso (o llamar `startStretch()`) y confirmar "Sí" al video de estiramiento.
+  3. Confirmar que se abre una ventana `ffplay` con el video reproduciéndose.
+  4. Repetir sin ffmpeg en el PATH y confirmar que cae al navegador con el aviso de instalación.
 - [ ] Probar la función de Spotify (Incluyendo el Auth Supongo). Pasos manuales (no se puede automatizar desde esta sesión):
   1. Crear una app en developer.spotify.com y registrar el Redirect URI exacto `http://127.0.0.1:5000/callback/`.
   2. Configurar `client_id`/`client_secret` desde el flujo de configuración de Spotify de la extensión.
@@ -52,6 +54,20 @@
 - [ ] Alarma/recordatorio personalizado (`setCustomReminder`): generalizar `AlarmManager` para un recordatorio de una sola vez con duración/hora arbitraria, pensado para avisar manualmente el reinicio de límites de tokens de IA.
 - [ ] Notificaciones bloqueantes que no interfieran con el bridge: las preguntas de sí/no deben seguir bloqueando el flujo del timer sin afectar la comunicación con `player_bridge.ps1` (ej. el polling del panel de reproductor). **Requiere su propio plan de implementación** antes de tocar código, por el riesgo de conflicto (ver `doc/FEATURES.md` #5).
 - [x] Panel de reproductor multi-sesión: listar todas las sesiones de medios activas (`GetSessions()`), destacar visualmente la sesión activa, y controlar cada una (anterior/pausar-reanudar como toggle/siguiente) por separado vía SMTC. Volumen preciso por sesión queda fuera de alcance (requiere Core Audio, ver `doc/FEATURES.md` #6). Probado por el usuario vía F5; además se puede "fijar" manualmente cuál sesión se destaca como activa haciendo click en el ítem (fuera de los botones de control).
+
+## NUEVAS (detectadas en pruebas F5, 2026-09-17)
+
+- [x] Bundlear yt-dlp de forma segura en vez de exigir instalación manual: descarga desde una release fijada de GitHub + verificación de SHA-256 contra el hash oficial + consentimiento explícito del usuario antes de la primera descarga. (`src/ytdlpManager.ts`, nuevo.)
+- [x] Video de estiramiento reproducido de verdad dentro de la extensión (ventana `ffplay`) en vez de solo abrir el navegador, con fallback al navegador si falta ffmpeg. (`Timer.playStretchVideo()` en `src/timer.ts`.)
+- [x] Bug: `yt-dlp -f bestaudio` fallaba con "Requested format is not available" al forzar los clientes `tv,ios,android` de YouTube (no siempre exponen audio-only). Corregido con fallback `bestaudio/best`. (`src/alarmManager.ts`.)
+- [x] Bug: YouTube devolvía "Sign in to confirm you're not a bot" con el cliente `web` por defecto de yt-dlp. Mitigado forzando `--extractor-args youtube:player_client=tv,ios,android`. (`src/ytdlpManager.ts`.)
+- [x] Bug: en Windows, `playYouTube` ignoraba ffmpeg aunque estuviera instalado y siempre usaba el `MediaPlayer` .NET. Ahora se prioriza `ffplay` (si está en el PATH) en cualquier sistema operativo, y solo se cae al `MediaPlayer` .NET en Windows cuando ffmpeg no está instalado. (`src/alarmManager.ts`.)
+- [x] Aclarado (no es un bug): `ffplay` no aparece en el panel de reproductor propio de la extensión porque no implementa la API SMTC que ese panel usa para listar sesiones — sí aparece en el Mezclador de Volumen nativo de Windows porque ese usa Core Audio a nivel de proceso. Documentado en `doc/FAQ.md`.
+- [ ] **Bug reportado por el usuario**: en la única prueba hecha hasta ahora, el video de estiramiento (`ffplay`, `Timer.playStretchVideo()`) se congeló a los ~10s — la imagen quedó fija pero el audio del mismo proceso siguió sonando con normalidad. Aún no reproducido de forma controlada ni diagnosticado a fondo; hipótesis a investigar (no excluyentes):
+  1. **Stall/throttling del stream de red**: el video (mucho más pesado que el audio) agota su buffer de decodificación antes que el audio cuando la red se entrecorta — es un síntoma clásico de `ffplay` con streams HTTP progresivos inestables. Posible mitigación: agregar flags de reconexión (`-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5`) al spawn de `ffplay` en `src/timer.ts`.
+  2. **Resolución/bitrate excesivo para el hardware**: el selector de formato actual (`best[ext=mp4]/best`) no limita la resolución, por lo que yt-dlp puede resolver a una calidad muy alta (ej. 1080p+) que satura la decodificación por software. Posible mitigación: acotar el formato (ej. `best[height<=720][ext=mp4]/best[height<=720]/best`) en `getStreamUrl(ytDlpPath, video, ...)` dentro de `Timer.playStretchVideo()`.
+  3. **Los clientes forzados de YouTube** (`tv,ios,android`, agregados para evitar el bloqueo anti-bot — ver `src/ytdlpManager.ts`) podrían servir el stream de video desde un CDN/política de throttling distinta a la del cliente `web`, más propensa a cortes. Investigar si el problema persiste con otro `player_client` o solo con estos.
+  4. Confirmar si el proceso `ffplay` realmente sigue vivo (no crasheó) mientras está congelado — si el video-only decode thread murió pero el proceso y el audio thread siguen corriendo, el síntoma encajaría con un crash aislado del decoder de video en vez de un problema de red.
 
 ### Investigación futura (no comprometida)
 

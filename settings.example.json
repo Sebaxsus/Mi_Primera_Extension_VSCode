@@ -49,6 +49,9 @@
   // "productivityTimer.minimumDailyMinutes": 15,
   
   // ALARMA CON YOUTUBE
+  // yt-dlp se descarga y verifica solo (con tu confirmación) la primera vez que se usa.
+  // ffmpeg sigue siendo manual: opcional en Windows (se usa si está, si no cae al
+  // reproductor nativo), necesario en macOS/Linux. Ver README.md / doc/INSTALL.md.
   // "productivityTimer.alarmType": "youtube",
   // "productivityTimer.alarmPath": "https://www.youtube.com/watch?v=KolfEhV-KiA",
   

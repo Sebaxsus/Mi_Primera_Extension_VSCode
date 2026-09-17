@@ -50,6 +50,8 @@
 
 ## Cómo Descargar Sonidos desde YouTube
 
+> **Nota**: esta sección es para preparar manualmente un archivo `.mp3` local desde la terminal (para usarlo luego con `alarmType: "local"`), y requiere tener `yt-dlp` instalado tú mismo en el PATH. Es independiente del yt-dlp que la extensión gestiona sola (descarga con checksum verificado) cuando usas `alarmType: "youtube"` directamente — ver `doc/current_status.md`.
+
 ### Opción 1: Usar yt-dlp (Recomendado)
 
 ```bash

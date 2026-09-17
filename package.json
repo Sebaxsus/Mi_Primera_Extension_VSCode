@@ -3,7 +3,9 @@
   "displayName": "Productivity Timer - Pomodoro & Motivación",
   "description": "Temporizador Pomodoro con sistema de rachas, puntos y frases motivacionales",
   "version": "1.0.0",
-  "publisher": "Sebaxsus+Claude",
+  "publisher": "sebaxsus",
+  "repository": "https://github.com/Sebaxsus/Mi_Primera_Extension_VSCode",
+  "icon": "media/extension_icon.png",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -81,7 +83,8 @@
         {
           "id": "productivityTimer.playerView",
           "name": "Reproductor",
-          "type": "webview"
+          "type": "webview",
+          "icon": "media/player-icon.svg"
         }
       ]
     },
@@ -115,13 +118,19 @@
         },
         "productivityTimer.stretchVideos": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "URLs de YouTube con rutinas de estiramiento. Si está vacía, se usa la lista curada por defecto de la extensión."
         },
         "productivityTimer.alarmType": {
           "type": "string",
-          "enum": ["local", "youtube", "spotify"],
+          "enum": [
+            "local",
+            "youtube",
+            "spotify"
+          ],
           "default": "local",
           "description": "Tipo de alarma a usar"
         },
@@ -141,10 +150,12 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.js && npm run postcompile",
+    "package": "node esbuild.js --production && npm run postcompile",
     "postcompile": "node -e \"require('fs').mkdirSync('out', { recursive: true }); require('fs').copyFileSync('src/player_bridge.ps1', 'out/player_bridge.ps1')\"",
-    "watch": "npm run postcompile && tsc -watch -p ./",
+    "watch": "node esbuild.js --watch",
+    "check-types": "tsc --noEmit -p ./",
     "pretest": "npm run compile",
     "lint": "eslint src --ext ts"
   },
@@ -153,10 +164,9 @@
     "@types/vscode": "^1.75.0",
     "@typescript-eslint/eslint-plugin": "^5.x",
     "@typescript-eslint/parser": "^5.x",
+    "esbuild": "^0.28.2",
     "eslint": "^8.x",
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
+    "typescript": "^5.0.0",
     "node-fetch": "^2.6.7"
   }
 }

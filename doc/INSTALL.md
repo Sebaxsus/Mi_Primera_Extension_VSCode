@@ -59,33 +59,35 @@ O haz clic en el icono del reloj en la barra de estado
 
 ## Configuración Opcional de YouTube (Recomendado)
 
+**yt-dlp** ya no requiere instalación manual: la extensión lo descarga sola (con tu confirmación explícita) la primera vez que reproduces algo de YouTube, verifica su checksum SHA-256 contra el oficial antes de usarlo, y lo guarda en su carpeta de almacenamiento interno (`globalStorage`). Solo necesitas instalar **ffmpeg** manualmente:
+
 ### Windows (con Chocolatey):
 ```bash
-choco install yt-dlp ffmpeg
+choco install ffmpeg
 ```
 
 ### Windows (con Scoop):
 ```bash
-scoop install yt-dlp ffmpeg
+scoop install ffmpeg
 ```
 
 ### macOS:
 ```bash
-brew install yt-dlp ffmpeg
+brew install ffmpeg
 ```
 
 ### Linux (Ubuntu/Debian):
 ```bash
 sudo apt update
 sudo apt install ffmpeg
-sudo pip install yt-dlp
 ```
 
 ### Verificar instalación:
 ```bash
-yt-dlp --version
 ffmpeg -version
 ```
+
+Sin ffmpeg, la alarma de YouTube en Windows igual funciona (usa el reproductor nativo del sistema), pero en macOS/Linux es obligatorio para el audio, y en cualquier sistema operativo hace falta para ver el video de estiramiento reproducido dentro de la extensión (si falta, el video se abre en el navegador como respaldo).
 
 ## Primeros Pasos
 
@@ -115,15 +117,14 @@ ffmpeg -version
 ### La alarma no suena:
 1. Verifica la configuración de audio
 2. Prueba con un archivo local primero
-3. Para YouTube, verifica que yt-dlp y ffmpeg estén instalados
+3. Para YouTube, confirma el diálogo de descarga de yt-dlp la primera vez (si lo cancelaste, se usa el beep del sistema en su lugar) y, en macOS/Linux, verifica que ffmpeg esté instalado
 
 ### YouTube no funciona:
 ```bash
-# Verifica instalación
-yt-dlp --version
+# Verifica ffmpeg (yt-dlp se gestiona solo, no hace falta instalarlo)
 ffmpeg -version
 
-# Si falta alguno, instálalo siguiendo las instrucciones arriba
+# Si falta, instálalo siguiendo las instrucciones arriba
 ```
 
 ## Comandos de Desarrollo

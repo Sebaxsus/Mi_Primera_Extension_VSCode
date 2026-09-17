@@ -1,9 +1,12 @@
 # Changelog
 
-## [Unreleased] - 2026-09-13
+## [Unreleased] - 2026-09-17
 
 ### ✨ Nuevas Características
 
+- 🔐 yt-dlp gestionado automáticamente por la extensión: se descarga (con confirmación explícita del usuario) desde una release fijada de GitHub, se verifica su SHA-256 contra el hash oficial, y se guarda en `globalStorage` — ya no hay que instalarlo manualmente (`src/ytdlpManager.ts`)
+- 🎬 Video de estiramiento reproducido de verdad dentro de la extensión (ventana nativa `ffplay`) en vez de solo abrir el navegador; si falta ffmpeg, avisa cómo instalarlo y cae al comportamiento anterior (`Timer.playStretchVideo()`)
+- 💬 20 frases motivacionales nuevas (ahora más de 60 en total) para mayor variedad
 - 🎛️ Panel de reproductor tipo flyout de Windows en la activity bar
   - Controles de play/pausa/siguiente/anterior/volumen (afectan al reproductor activo del sistema: Spotify, navegador, etc.)
   - Título y artista de la canción actual en vivo, vía SMTC (`Windows.Media.Control`)
@@ -27,6 +30,7 @@
 - Panel de reproductor: nuevo footer con botón "⚙️ Configuración" que abre el dashboard directamente
 - `MusicPlayer`: se corrigió la ruta hardcodeada de `player_bridge.ps1` (ahora portable entre máquinas) y se agregaron `pause()`, `currentSong()`, `isPlaying()`
 - Alarma de YouTube: validación de `ffplay` y mensajes de error concretos cuando `yt-dlp` falla, en vez de fallar en silencio
+- Alarma de YouTube: se prioriza `ffplay` (si está en el PATH) en cualquier sistema operativo; en Windows solo cae al `MediaPlayer` .NET cuando ffmpeg no está instalado (antes lo ignoraba aunque estuviera presente)
 - Estado de la alarma consultable (`AlarmManager.isAlarmActive()`)
 - Notificaciones de puro aviso (sin botones) ya no se acumulan en el historial de Notificaciones de VSCode: pasan a mostrarse como mensajes transitorios en la barra de estado
 
@@ -35,6 +39,8 @@
 - Timer: se corrigió una condición de carrera entre `stopTimer()` y la finalización normal de una etapa (`onTimerComplete`) que podía romper el flujo o duplicar el mensaje de "Temporizador detenido"
 - Spotify: se corrigió el `redirectUri` por defecto inconsistente en `Spotify/auth.ts`
 - Recordatorio diario: el archivo sidecar (`daily-status.json`) no se refrescaba al cambiar `minimumDailyMinutes` desde el dashboard ni desde el comando nativo de configuración, por lo que el script del recordatorio podía leer un mínimo desactualizado y no notificar cuando correspondía
+- Alarma de YouTube: `yt-dlp -f bestaudio` fallaba con "Requested format is not available" al forzar clientes de YouTube que no siempre exponen audio-only; corregido con fallback `bestaudio/best`
+- Alarma de YouTube: mitigado el error "Sign in to confirm you're not a bot" del cliente `web` por defecto de yt-dlp, forzando los clientes `tv,ios,android`
 
 ## [1.0.0] - 2024-02-03
 

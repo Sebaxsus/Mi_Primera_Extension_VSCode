@@ -44,13 +44,13 @@ Registra una tarea en el Task Scheduler de Windows para avisarte si no completas
 
 ### 💬 Frases Motivacionales
 - Una frase motivacional diferente cada día al abrir VS Code
-- Más de 40 frases inspiradoras para mantenerte motivado
+- Más de 60 frases inspiradoras para mantenerte motivado
 
 ### 🔊 Alarmas Personalizables
 Elige cómo quieres ser notificado al terminar cada etapa:
 
 1. **Archivo Local**: Usa cualquier archivo de audio (.mp3, .wav, .ogg, etc.) — funcional y probado en Windows/macOS/Linux **[MediaPlayer Win][1]**
-2. **YouTube**: Reproduce música o sonidos desde YouTube (requiere yt-dlp + ffmpeg) — implementado, pero aún **experimental/sin probar de forma extensiva**
+2. **YouTube**: Reproduce música o sonidos desde YouTube — yt-dlp se descarga y verifica solo (sin instalación manual); ffmpeg sigue siendo opcional/manual (macOS/Linux para audio, cualquier SO para ver el video de estiramiento). Audio confirmado funcionando en Windows; sigue siendo **experimental** en el resto de escenarios
 3. **Spotify**: Intenta abrir/controlar Spotify — implementado de forma parcial y **experimental**; el flujo de autenticación guarda un token, pero la reproducción real todavía no lo consume, así que puede requerir reproducir manualmente
 
 > Ver `doc/current_status.md` para el detalle actualizado de qué está probado y qué sigue siendo experimental.
@@ -90,30 +90,31 @@ Esto creará un archivo `.vsix` que puedes instalar manualmente en VS Code.
 
 ## 📋 Requisitos Opcionales
 
-### Para usar YouTube como alarma:
-- **yt-dlp**: [Descargar aquí](https://github.com/yt-dlp/yt-dlp)
-- **ffmpeg**: [Descargar aquí](https://ffmpeg.org/download.html)
+### Para usar YouTube como alarma o ver el video de estiramiento:
+- **yt-dlp**: no requiere instalación manual. La extensión descarga el binario oficial una única vez (con tu confirmación explícita) desde una release fijada de GitHub, verifica su checksum SHA-256 antes de usarlo, y lo guarda en su carpeta de almacenamiento interno.
+- **ffmpeg**: sí requiere instalación manual — [Descargar aquí](https://ffmpeg.org/download.html) (asegúrate de agregarlo a las variables de entorno/PATH de tu sistema). Se usa para:
+  - Reproducir el audio de la alarma de YouTube en macOS/Linux (en Windows no hace falta, se reutiliza el reproductor nativo).
+  - Reproducir el video de estiramiento dentro de la extensión (ventana externa vía `ffplay`), en cualquier sistema operativo. Si no está instalado, el video se abre en el navegador como respaldo.
 
-#### Instalación en diferentes sistemas:
+#### Instalación de ffmpeg en diferentes sistemas:
 
 **Windows:**
 ```bash
 # Con Chocolatey
-choco install yt-dlp ffmpeg
+choco install ffmpeg
 
 # Con Scoop
-scoop install yt-dlp ffmpeg
+scoop install ffmpeg
 ```
 
 **macOS:**
 ```bash
-brew install yt-dlp ffmpeg
+brew install ffmpeg
 ```
 
 **Linux (Ubuntu/Debian):**
 ```bash
 sudo apt install ffmpeg
-sudo pip install yt-dlp
 ```
 
 ### Para usar Spotify:
@@ -223,7 +224,7 @@ Haz clic en la barra de estado para:
 
 ### La alarma no suena:
 1. Verifica que el archivo de audio existe y es accesible
-2. Para YouTube, asegúrate de tener yt-dlp y ffmpeg instalados
+2. Para YouTube, confirma el diálogo de descarga de yt-dlp la primera vez; en macOS/Linux además verifica que ffmpeg esté instalado
 3. Prueba la alarma usando el comando "Configurar Sonido de Alarma" o el botón "Probar" del panel de Estadísticas
 
 ### La racha no se actualiza:
@@ -232,9 +233,10 @@ Haz clic en la barra de estado para:
 3. Si detienes una sesión antes de tiempo, el tiempo trabajado se registra pero puede no contar para la racha
 
 ### YouTube no funciona:
-1. Verifica que yt-dlp esté instalado: `yt-dlp --version`
-2. Verifica que ffmpeg esté instalado: `ffmpeg -version`
-3. Asegúrate de que la URL de YouTube sea válida
+1. La primera vez debe aparecer un diálogo pidiendo confirmación para descargar yt-dlp — si lo cancelaste, se usará el beep del sistema en su lugar. Vuelve a intentarlo y confirma la descarga.
+2. En macOS/Linux, verifica que ffmpeg esté instalado y en el PATH: `ffmpeg -version` (en Windows no hace falta para el audio de la alarma).
+3. Para ver el video de estiramiento reproducido dentro de la extensión (no solo en el navegador), ffmpeg debe estar instalado también en Windows.
+4. Asegúrate de que la URL de YouTube sea válida
 
 ### El panel de reproductor no aparece o no controla nada:
 1. Esta característica es exclusiva de Windows

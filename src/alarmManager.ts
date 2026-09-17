@@ -4,6 +4,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { MusicPlayer } from './musicPlayer';
 import { showToast } from './notify';
+import { commandExists } from './utils';
+import { ensureYtDlp, getStreamUrl } from './ytdlpManager';
+
+const FFMPEG_DOWNLOAD_URL = 'https://ffmpeg.org/download.html';
 
 export interface AlarmData {
     alarmType: string,
@@ -16,6 +20,11 @@ export class AlarmManager {
     private currentProcess: child_process.ChildProcess | null = null;
     private musicPlayer: MusicPlayer = new MusicPlayer;
     private playing: boolean = false;
+    private context: vscode.ExtensionContext;
+
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+    }
 
     /**
      * Indica si la alarma esta sonando actualmente (local, YouTube o Spotify).
@@ -116,7 +125,7 @@ export class AlarmManager {
                 child_process.spawn('afplay', ['-v', volumeDecimal.toString(), filePath]);
             } else {
                 // Linux: intentar varios reproductores
-                if (this.commandExists('ffplay')) {
+                if (commandExists('ffplay')) {
                     const volumeDb = this.volumeToDb(volume);
                     this.currentProcess = child_process.spawn('ffplay', [
                         '-nodisp',
@@ -125,9 +134,9 @@ export class AlarmManager {
                         volumeDb.toString(),
                         filePath
                     ]);
-                } else if (this.commandExists('mpg123')) {
+                } else if (commandExists('mpg123')) {
                     child_process.spawn('mpg123', [filePath]);
-                } else if (this.commandExists('aplay')) {
+                } else if (commandExists('aplay')) {
                     child_process.spawn('aplay', [filePath]);
                 } else {
                     this.playSystemBeep();
@@ -144,63 +153,51 @@ export class AlarmManager {
             return;
         }
 
-        // Verificar si yt-dlp y ffplay (del paquete ffmpeg) están disponibles
-        const hasYtDlp = this.commandExists('yt-dlp');
-        const hasFfplay = this.commandExists('ffplay');
-
-        if (!hasYtDlp || !hasFfplay) {
-            vscode.window.showWarningMessage(
-                'yt-dlp y ffplay (incluido en ffmpeg) son necesarios para reproducir desde YouTube. ' +
-                'Por favor instálalos o usa un archivo local.'
-            );
+        const ytDlpPath = await ensureYtDlp(this.context);
+        if (!ytDlpPath) {
+            // El usuario canceló la descarga/verificación de yt-dlp, o no hay
+            // binario verificado para esta plataforma.
             this.playSystemBeep();
             return;
         }
 
         try {
-            const volumeDb = this.volumeToDb(volume);
-            
-            // Usar yt-dlp para obtener el stream y ffplay para reproducir
-            const ytDlpProcess = child_process.spawn('yt-dlp', [
-                '-f', 'bestaudio',
-                '-o', '-',
-                url
-            ]);
+            // "bestaudio" a secas puede no existir en los clientes forzados en
+            // getStreamUrl() (tv/ios/android no siempre exponen audio-only) — con
+            // fallback a "best" se resuelve igual a un formato combinado si hace falta.
+            const streamUrl = await getStreamUrl(ytDlpPath, url, 'bestaudio/best');
 
-            this.currentProcess = child_process.spawn('ffplay', [
-                '-nodisp',
-                '-autoexit',
-                '-volume', volumeDb.toString(),
-                '-'
-            ]);
+            // Se prioriza ffplay (mejor manejo de streams) en cualquier sistema operativo;
+            // en Windows, si ffmpeg no está instalado, se cae al MediaPlayer .NET del bridge existente.
+            if (commandExists('ffplay')) {
+                const volumeDb = this.volumeToDb(volume);
+                this.currentProcess = child_process.spawn('ffplay', [
+                    '-nodisp',
+                    '-autoexit',
+                    '-volume', volumeDb.toString(),
+                    streamUrl
+                ]);
 
-            // Conectar la salida de yt-dlp con la entrada de ffplay
-            if (this.currentProcess.stdin) {
-                ytDlpProcess.stdout.pipe(this.currentProcess.stdin);
+                this.currentProcess.on('error', () => {
+                    vscode.window.showErrorMessage('Error al reproducir audio de YouTube con ffplay');
+                    this.playSystemBeep();
+                });
+                return;
             }
 
+            if (process.platform === 'win32') {
+                this.musicPlayer.setVolume(volume);
+                this.musicPlayer.play(streamUrl);
+                return;
+            }
 
-            let ytDlpError = '';
-            ytDlpProcess.stderr?.on('data', (data) => {
-                ytDlpError += data.toString();
-            });
-
-            ytDlpProcess.on('error', () => {
-                vscode.window.showErrorMessage('Error al descargar audio de YouTube');
-                this.playSystemBeep();
-            });
-
-            ytDlpProcess.on('close', (code) => {
-                if (code !== 0) {
-                    vscode.window.showErrorMessage(
-                        `yt-dlp no pudo obtener el audio (código ${code}). ` +
-                        `Verifica que el link sea válido y esté disponible. ${ytDlpError.trim()}`
-                    );
-                    this.playSystemBeep();
-                }
-            });
-
+            vscode.window.showWarningMessage(
+                `ffmpeg (que incluye ffplay) es necesario para reproducir audio de YouTube en este sistema operativo. ` +
+                `Instálalo y agrégalo al PATH: ${FFMPEG_DOWNLOAD_URL}`
+            );
+            this.playSystemBeep();
         } catch (error) {
+            vscode.window.showErrorMessage(`Error al reproducir audio de YouTube: ${error}`);
             this.playSystemBeep();
         }
     }
@@ -228,7 +225,7 @@ export class AlarmManager {
                 }
             } else {
                 // Linux: usar dbus si está disponible
-                if (this.commandExists('dbus-send')) {
+                if (commandExists('dbus-send')) {
                     child_process.exec('dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Play');
                 } else {
                     showToast('Por favor, reproduce manualmente la canción en Spotify.', 8000);
@@ -249,22 +246,11 @@ export class AlarmManager {
             child_process.exec('afplay /System/Library/Sounds/Glass.aiff');
         } else {
             // Linux
-            if (this.commandExists('paplay')) {
+            if (commandExists('paplay')) {
                 child_process.exec('paplay /usr/share/sounds/freedesktop/stereo/complete.oga');
-            } else if (this.commandExists('speaker-test')) {
+            } else if (commandExists('speaker-test')) {
                 child_process.exec('speaker-test -t sine -f 1000 -l 1');
             }
-        }
-    }
-
-    private commandExists(command: string): boolean {
-        try {
-            const platform = process.platform;
-            const checkCommand = platform === 'win32' ? 'where' : 'which';
-            child_process.execSync(`${checkCommand} ${command}`, { stdio: 'ignore' });
-            return true;
-        } catch {
-            return false;
         }
     }
 

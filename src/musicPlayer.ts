@@ -196,6 +196,15 @@ export class MusicPlayer extends EventEmitter {
         this.sendCommand('spotifyOpen', { uri });
     }
 
+    /**
+     * Envía una tecla (virtual-key code) a la ventana principal del proceso `pid`,
+     * sin robarle el foco a VS Code. Usado para controlar el ffplay del video de
+     * estiramiento. Ver comando `windowKey` en src/player_bridge.ps1.
+     */
+    public windowKey(pid: number, vk: number) {
+        this.sendCommand('windowKey', { pid, vk });
+    }
+
     execCommand(command: string) {
         this.sendCommand('command', { msg: command });
     }

@@ -67,6 +67,26 @@
         "command": "productivityTimer.disableDailyReminder",
         "title": "⏰ Desactivar Recordatorio Diario",
         "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.stretchVideoTogglePause",
+        "title": "🧘 Pausar/Reanudar Video de Estiramiento",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.stretchVideoSeekBack",
+        "title": "🧘 Retroceder 10 s el Video de Estiramiento",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.stretchVideoSeekForward",
+        "title": "🧘 Adelantar 10 s el Video de Estiramiento",
+        "category": "Productivity Timer"
+      },
+      {
+        "command": "productivityTimer.stretchVideoStop",
+        "title": "🧘 Cerrar Video de Estiramiento",
+        "category": "Productivity Timer"
       }
     ],
     "viewsContainers": {

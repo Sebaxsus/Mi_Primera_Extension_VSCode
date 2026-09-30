@@ -1,14 +1,10 @@
 import * as vscode from 'vscode';
-import { spawn } from 'child_process';
 import { AlarmManager } from './alarmManager';
 import { DataManager } from './dataManager';
 import { DEFAULT_STRETCH_VIDEOS } from './stretchVideos';
 import { showToast } from './notify';
 import { refreshStatsPanelIfOpen } from './WebView/panelManager';
-import { commandExists } from './utils';
-import { ensureYtDlp, getStreamUrl } from './ytdlpManager';
-
-const FFMPEG_DOWNLOAD_URL = 'https://ffmpeg.org/download.html';
+import { StretchVideoPlayer } from './stretchVideoPlayer';
 
 export enum TimerState {
     IDLE,
@@ -28,7 +24,7 @@ export class Timer {
     private dailyLimitSeconds: number = 0;
     private sessionStartTime: number = 0;
     private isFinishing: boolean = false;
-    private context: vscode.ExtensionContext;
+    private stretchVideoPlayer: StretchVideoPlayer;
 
     //
     private answer: string | undefined;
@@ -37,12 +33,12 @@ export class Timer {
         statusBarItem: vscode.StatusBarItem,
         alarmManager: AlarmManager,
         dataManager: DataManager,
-        context: vscode.ExtensionContext
+        stretchVideoPlayer: StretchVideoPlayer
     ) {
         this.statusBarItem = statusBarItem;
         this.alarmManager = alarmManager;
         this.dataManager = dataManager;
-        this.context = context;
+        this.stretchVideoPlayer = stretchVideoPlayer;
         this.updateStatusBar();
     }
 
@@ -144,51 +140,7 @@ export class Timer {
         );
 
         if (answer === 'Sí') {
-            await this.playStretchVideo(video);
-        }
-    }
-
-    /**
-     * Reproduce el video de estiramiento en una ventana nativa vía `ffplay` si
-     * ffmpeg está instalado; si no, avisa cómo instalarlo y cae al comportamiento
-     * anterior (abrir el video en el navegador) para no dejar al usuario sin nada.
-     */
-    private async playStretchVideo(video: string): Promise<void> {
-        if (!commandExists('ffplay')) {
-            vscode.window.showWarningMessage(
-                `ffmpeg (que incluye ffplay) es necesario para reproducir el video de estiramiento dentro de la extensión. ` +
-                `Instálalo y agrégalo al PATH de tu sistema operativo: ${FFMPEG_DOWNLOAD_URL}`
-            );
-            vscode.env.openExternal(vscode.Uri.parse(video));
-            return;
-        }
-
-        const ytDlpPath = await ensureYtDlp(this.context);
-        if (!ytDlpPath) {
-            vscode.env.openExternal(vscode.Uri.parse(video));
-            return;
-        }
-
-        try {
-            const streamUrl = await getStreamUrl(ytDlpPath, video, 'best[ext=mp4]/best');
-            // stdio 'ignore' + '-nostats': ffplay escribe su línea de estado en stderr
-            // varias veces por segundo; si nadie lee el pipe, el buffer se llena y ffplay
-            // se bloquea (el video se congelaba a los 10-30 s).
-            // detached (y no windowsHide): windowsHide también oculta la ventana SDL del
-            // video; detached evita que se cree una consola sin ocultar esa ventana.
-            const ffplayProcess = spawn(
-                'ffplay',
-                ['-autoexit', '-loglevel', 'error', '-nostats', '-window_title', 'Estiramiento', streamUrl],
-                { stdio: 'ignore', detached: true }
-            );
-
-            ffplayProcess.on('error', () => {
-                vscode.window.showErrorMessage('Error al reproducir el video de estiramiento con ffplay');
-                vscode.env.openExternal(vscode.Uri.parse(video));
-            });
-        } catch (error) {
-            vscode.window.showErrorMessage(`Error al reproducir el video de estiramiento: ${error}`);
-            vscode.env.openExternal(vscode.Uri.parse(video));
+            await this.stretchVideoPlayer.play(video);
         }
     }
 

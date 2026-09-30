@@ -27,6 +27,25 @@ function Get-SmtcManager {
     $script:smtcManager
 }
 
+# --- Envio de teclas a una ventana concreta (ej. el ffplay del video de estiramiento) ---
+# PostMessage entrega WM_KEYDOWN/WM_KEYUP a esa ventana sin robarle el foco a VS Code
+# ni afectar a otras apps. SDL (ffplay) traduce la tecla desde el scancode del lParam.
+Add-Type -Namespace ProductivityTimer -Name User32 -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+[DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint mapType);
+'@
+
+function Send-WindowKey([int]$targetPid, [int]$vk) {
+    $proc = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+    if ($null -eq $proc -or $proc.MainWindowHandle -eq 0) { return $false }
+    $scan = [ProductivityTimer.User32]::MapVirtualKey($vk, 0)
+    $down = [IntPtr](1 -bor ($scan -shl 16))
+    $up = [IntPtr]([long](1 -bor ($scan -shl 16) -bor (1 -shl 30)) -bor 0x80000000L)
+    [ProductivityTimer.User32]::PostMessage($proc.MainWindowHandle, 0x100, [IntPtr]$vk, $down) | Out-Null # WM_KEYDOWN
+    [ProductivityTimer.User32]::PostMessage($proc.MainWindowHandle, 0x101, [IntPtr]$vk, $up) | Out-Null   # WM_KEYUP
+    return $true
+}
+
 function SendInfo($type, $msg) {
     $timestamp = Get-Date -Format 'HH:mm:ss';
 
@@ -165,6 +184,13 @@ while ($true) {
                     SendInfo "INFO" "Spotify activado"
                 } else {
                     SendInfo "WARN" "Spotify no tomo el foco; no se envio Enter"
+                }
+            }
+            "windowKey" {
+                if (Send-WindowKey $data.pid $data.vk) {
+                    SendInfo "INFO" "Tecla $($data.vk) enviada al proceso $($data.pid)"
+                } else {
+                    Write-Host (@{event = "error"; message = "El proceso $($data.pid) no tiene una ventana a la cual enviar la tecla"} | ConvertTo-Json -Compress)
                 }
             }
             "exit"   { exit }

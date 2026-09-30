@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased] - 2026-09-29
+
+### ✨ Nuevas Características
+
+- 🧘 Controles multimedia para el video de estiramiento (`ffplay`), que afectan **solo a ese video**:
+  - Tarjeta "Video de estiramiento" en el panel Reproductor, visible solo mientras el video está abierto: pausa/reanudar, ±10 s, volumen, silencio, pantalla completa y cerrar
+  - Botones de pausa/reanudar y cerrar en la barra de estado
+  - Comandos `🧘 Pausar/Reanudar`, `Retroceder 10 s`, `Adelantar 10 s` y `Cerrar Video de Estiramiento`
+  - Implementación: ffplay no tiene IPC, así que el bridge envía las teclas de ffplay con `PostMessage` a la ventana de ese PID (comando `windowKey`), sin robarle el foco a VS Code. Windows-only; en otros SO solo está disponible "Cerrar"
+  - Nueva clase `StretchVideoPlayer` (`src/stretchVideoPlayer.ts`), que reemplaza a `Timer.playStretchVideo()`
+
+### 🐛 Correcciones
+
+- Video de estiramiento: se congelaba a los 10-30 s. `ffplay` se lanzaba con `stdio` en pipe sin que nadie lo leyera; al llenarse el buffer de stderr (línea de estado), ffplay se bloqueaba. Ahora `stdio: 'ignore'` + `-nostats` (también en la alarma de YouTube)
+- Alarma de Spotify: en equipos donde Spotify tardaba en abrir, se disparaba ~100 veces. `SendKeys('~')` enviaba Enter a la ventana con foco, que era el botón "Probar" de VS Code, y la prueba se re-lanzaba en bucle. Nuevo comando `spotifyOpen` en el bridge que solo envía Enter si la ventana de Spotify quedó activa; guardas contra re-entrada en `testAlarm()` y en el botón del dashboard
+- Seguridad: el URI de Spotify ya no se interpola en `Invoke-Expression`
+- Ventanas de terminal al abrir VS Code: el bridge de PowerShell (uno por ventana de VS Code) se lanzaba sin `windowsHide` ni `-NoProfile`. Con Windows Terminal como terminal predeterminada aparecía como ventana visible y ejecutaba el `$PROFILE` del usuario. Ahora `-NoProfile -NoLogo` + `windowsHide` (también en `where`, `schtasks`, `yt-dlp` y `rundll32`); el ffplay del video usa `detached` porque `windowsHide` ocultaría también la ventana del video
+- Desarrollo: la tarea `watch` (esbuild) nunca terminaba para el problemMatcher `$tsc-watch` y el `preLaunchTask` de "Run Extension" quedaba colgado. `esbuild.js` ahora imprime `[watch] build started/finished`, `tasks.json` tiene un problemMatcher propio, y el `.ps1` del bridge se copia a `out/` en cada build (el script `postcompile` se eliminó)
+
 ## [Unreleased] - 2026-09-17
 
 ### ✨ Nuevas Características

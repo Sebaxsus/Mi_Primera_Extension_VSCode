@@ -100,3 +100,20 @@
 **Fuera de alcance (decisión explícita)**: volumen preciso por sesión/aplicación. Investigado y descartado por ahora: requiere Core Audio (`IAudioSessionManager2`/`ISimpleAudioVolume`), una API COM clásica sin proyección WinRT — a diferencia de SMTC, implica redefinir interfaces COM a mano en PowerShell (GUIDs exactos, orden de vtable exacto), con riesgo real de crashear el proceso persistente compartido con la alarma si algo se define mal, y sin mapeo confiable garantizado entre `SourceAppUserModelId` (SMTC) y `ProcessId` (Core Audio) para apps multi-proceso como los navegadores. Se documenta como investigación futura, no como tarea comprometida.
 
 **Alcance/limitaciones**: Windows-only, igual que la Feature #2.
+
+---
+
+## 7. Controles del video de estiramiento (implementado 2026-09-29)
+
+**Objetivo**: controlar el video de estiramiento (ventana nativa de `ffplay`) desde VS Code, **sin afectar a otras apps de medios** (Spotify, navegador, etc.).
+
+**Por qué no se reutiliza SMTC**: `ffplay` no publica una sesión SMTC (ver FAQ), así que no aparece en la lista del panel Reproductor ni responde a las teclas multimedia globales. Tampoco tiene IPC ni lee comandos por stdin: solo responde a teclas en su propia ventana (`p` pausa, `←/→` ±10 s, `9/0` volumen, `m` silencio, `f` pantalla completa).
+
+**Diseño**:
+- `src/stretchVideoPlayer.ts` (`StretchVideoPlayer`): lanza `ffplay` (yt-dlp → URL del stream), guarda el proceso y el estado (pausa/silencio), emite `'change'` y permite un solo video a la vez. Se cierra al desactivar la extensión.
+- `player_bridge.ps1`, comando `windowKey` (`MusicPlayer.windowKey(pid, vk)`): `PostMessage` de `WM_KEYDOWN`/`WM_KEYUP` a la ventana principal de ese PID, con el scancode en el `lParam` (SDL lo usa para traducir la tecla). No roba el foco; verificado con VS Code en primer plano.
+- UI: tarjeta en el panel Reproductor (`media/player.*`) y botones en la barra de estado (`extension.ts`), visibles solo mientras el video está abierto. Comandos `productivityTimer.stretchVideoTogglePause`/`SeekBack`/`SeekForward`/`Stop`.
+
+**Limitaciones**:
+- El estado de pausa/silencio se lleva del lado de la extensión: si el usuario pulsa `p`/`m` directamente en la ventana de ffplay, el botón puede quedar desfasado hasta el siguiente cambio.
+- Windows-only (en macOS/Linux solo está disponible "Cerrar").

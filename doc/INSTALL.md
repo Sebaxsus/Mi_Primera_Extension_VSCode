@@ -134,6 +134,16 @@ ffmpeg -version
 npm run watch
 ```
 
+El build usa **esbuild** (`esbuild.js`). La tarea `watch` de `.vscode/tasks.json` espera las líneas `[watch] build started` / `[watch] build finished` para saber cuándo terminó cada build, y en cada build copia `src/player_bridge.ps1` a `out/`. esbuild no revisa tipos; para eso usa `npm run check-types`.
+
+### F5 abre la ventana pero la extensión no carga ("Extension host did not start in 10 seconds")
+
+Es un bug de **VS Code 1.139.x** (js-debug 1.117): el depurador busca el Extension Host en `localhost`, que en Windows resuelve primero a `::1` (IPv6), mientras que el host solo escucha en `127.0.0.1`. No es un problema del proyecto. Mientras sale el fix:
+- Usa **Run → Run Without Debugging (`Ctrl+F5`)**: la extensión carga, pero sin breakpoints (los `console.log` se ven en *Help → Toggle Developer Tools* de la ventana de desarrollo).
+- O instala la extensión **JavaScript Debugger (Nightly)** (`ms-vscode.js-debug-nightly`) y vuelve a probar `F5`.
+
+Referencias: [microsoft/vscode-js-debug#2420](https://github.com/microsoft/vscode-js-debug/issues/2420), [microsoft/vscode#338110](https://github.com/microsoft/vscode/issues/338110).
+
 ### Ejecutar linter:
 ```bash
 npm run lint

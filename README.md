@@ -13,8 +13,9 @@ Una extensión completa de Visual Studio Code que te ayuda a mantener el enfoque
 
 ### 🧘 Estiramiento con Rutinas en Video
 - Se ofrece automáticamente después de cada descanso
-- Sugiere un video corto de estiramiento (cuello, espalda, muñecas) elegido al azar de una lista curada, con confirmación antes de abrirlo en el navegador
+- Sugiere un video corto de estiramiento (cuello, espalda, muñecas) elegido al azar de una lista curada y, con confirmación, lo reproduce en una ventana de `ffplay` (o en el navegador si falta ffmpeg)
 - Puedes reemplazar la lista por tus propios videos de YouTube
+- Controles del video desde VS Code (Windows): pausa, ±10 s, volumen, silencio, pantalla completa y cerrar, en el panel Reproductor y en la barra de estado. Solo afectan a ese video
 
 ### 🎚️ Panel de Reproductor (Windows)
 Un panel propio en la Activity Bar que funciona como el flyout multimedia de Windows:
@@ -137,6 +138,7 @@ Accede a estos comandos desde la paleta de comandos (`Ctrl+Shift+P` o `Cmd+Shift
 - `⚙️ Configurar Temporizador`: Configura duraciones de trabajo, descanso, mínimo diario y estiramiento
 - `🔊 Configurar Sonido de Alarma`: Personaliza la alarma
 - `🔊 Probar el Sonido de Alarma`: Reproduce la alarma configurada para verificarla
+- `🧘 Pausar/Reanudar`, `Retroceder 10 s`, `Adelantar 10 s` y `Cerrar Video de Estiramiento`: Controlan el video de estiramiento abierto
 - `⏰ Activar Recordatorio Diario`: Registra el recordatorio diario en el Task Scheduler de Windows (pide confirmación antes de crear la tarea)
 - `⏰ Desactivar Recordatorio Diario`: Elimina la tarea programada
 

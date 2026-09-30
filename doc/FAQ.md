@@ -151,6 +151,14 @@ La extensión descarga siempre la misma release fijada (no "latest") desde GitHu
 
 Es esperado. El panel de reproductor de la extensión lista sesiones usando la API SMTC (`Windows.Media.Control`), que solo muestra apps que publican explícitamente su metadata de reproducción (Spotify, navegadores, etc.). `ffplay` es un reproductor mínimo que no implementa esa integración, por lo que es invisible para SMTC — pero el Mezclador de Volumen nativo de Windows sí lo detecta porque usa Core Audio a nivel de proceso, un mecanismo distinto en el que cualquier app que reproduce audio queda registrada sin necesidad de "adherirse" a nada.
 
+### ¿Cómo controlo el video de estiramiento (pausa, adelantar, volumen)?
+
+Mientras el video está abierto aparece una tarjeta "🧘 Video de estiramiento" en el panel Reproductor, y botones de pausa/cerrar en la barra de estado. También puedes usar los comandos `Productivity Timer: 🧘 ... Video de Estiramiento` o las teclas de ffplay directamente en su ventana (`p`, `←/→`, `9/0`, `m`, `f`). Estos controles solo afectan a ese video, no a Spotify ni al navegador. Por ahora solo funcionan en Windows (en macOS/Linux solo se puede cerrar).
+
+### El video de estiramiento se congelaba a los pocos segundos
+
+Corregido (2026-09-29). No eran anuncios: la URL que resuelve yt-dlp es el archivo del video, sin anuncios. ffplay escribía su línea de estado en un pipe que nadie leía, y al llenarse el buffer el proceso se bloqueaba. Si todavía te pasa, actualiza la extensión.
+
 ### ¿Puedo usar URLs de YouTube Music?
 
 Sí, yt-dlp soporta YouTube Music. Solo copia la URL completa.
@@ -273,6 +281,14 @@ Verifica que VS Code no esté entrando en modo de suspensión o que tu computado
 1. Reinicia VS Code
 2. Ejecuta "Ver Estadísticas"
 3. Si persiste, revisa la consola de desarrollador
+
+### Al abrir VS Code se abren ventanas de terminal/PowerShell
+
+Corregido (2026-09-29). La extensión mantiene un proceso de PowerShell en segundo plano por cada ventana de VS Code (para la alarma y el panel Reproductor). En equipos con **Windows Terminal como aplicación de terminal predeterminada**, ese proceso aparecía como una ventana visible y además ejecutaba tu `$PROFILE` de PowerShell, lo que podía parecer una instalación. Ahora se lanza oculto y con `-NoProfile`. Si todavía te pasa, actualiza la extensión y avisa en un issue qué ves exactamente.
+
+### La alarma de Spotify se dispara muchas veces seguidas
+
+Corregido (2026-09-29). La extensión simulaba un Enter para que Spotify reprodujera la canción; si Spotify tardaba en abrir, ese Enter caía en el botón "Probar" de VS Code y volvía a lanzar la prueba. Ahora el Enter solo se envía si la ventana de Spotify quedó activa.
 
 ### No puedo instalar el .vsix
 

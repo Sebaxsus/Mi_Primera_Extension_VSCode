@@ -69,7 +69,13 @@ function applyData(data) {
 // Datos iniciales embebidos por dashboard.ts (evita un primer postMessage de ida y vuelta).
 applyData(window.__initialData);
 
-document.getElementById('probar-alarma-btn')?.addEventListener('click', () => {
+document.getElementById('probar-alarma-btn')?.addEventListener('click', (event) => {
+    // Se quita el foco y se deshabilita un momento: un Enter simulado (SendKeys) o
+    // pulsado de más no debe poder re-disparar la prueba en bucle.
+    const btn = event.currentTarget;
+    btn.blur();
+    btn.disabled = true;
+    setTimeout(() => { btn.disabled = false; }, 5000);
     vscode.postMessage({ command: 'ejecutarAlarma' });
 });
 

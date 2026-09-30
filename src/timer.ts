@@ -171,7 +171,14 @@ export class Timer {
 
         try {
             const streamUrl = await getStreamUrl(ytDlpPath, video, 'best[ext=mp4]/best');
-            const ffplayProcess = spawn('ffplay', ['-autoexit', '-window_title', 'Estiramiento', streamUrl]);
+            // stdio 'ignore' + '-nostats': ffplay escribe su línea de estado en stderr
+            // varias veces por segundo; si nadie lee el pipe, el buffer se llena y ffplay
+            // se bloquea (el video se congelaba a los 10-30 s).
+            const ffplayProcess = spawn(
+                'ffplay',
+                ['-autoexit', '-loglevel', 'error', '-nostats', '-window_title', 'Estiramiento', streamUrl],
+                { stdio: 'ignore' }
+            );
 
             ffplayProcess.on('error', () => {
                 vscode.window.showErrorMessage('Error al reproducir el video de estiramiento con ffplay');

@@ -15,7 +15,7 @@
 - **Rachas, puntos y logros** (`src/dataManager.ts`, `src/WebView/achievementsManager.ts`): cálculo de racha diaria, sistema de puntos y 9 logros desbloqueables.
 - **Frases motivacionales** (`src/motivationalQuotes.ts`): frase diaria mostrada al usuario.
 - **Alarma local** (`src/alarmManager.ts` + `src/musicPlayer.ts`):
-  - Windows: proceso PowerShell persistente (`src/player_bridge.ps1`) que usa `System.Windows.Media.MediaPlayer`, comunicado por JSON vía stdin/stdout. La ruta al script ya no está hardcodeada (se resuelve con `path.join(__dirname, ...)` + copia vía script `postcompile`).
+  - Windows: proceso PowerShell persistente (`src/player_bridge.ps1`) que usa `System.Windows.Media.MediaPlayer`, comunicado por JSON vía stdin/stdout. La ruta al script ya no está hardcodeada (se resuelve con `path.join(__dirname, ...)` + copia a `out/` desde el plugin de `esbuild.js` en cada build, incluido watch).
   - macOS/Linux: `afplay` / `ffplay` / `mpg123` / `aplay` según disponibilidad.
   - Se puede consultar si la alarma está sonando (`AlarmManager.isAlarmActive()`).
 - **Panel de Estadísticas editable y en vivo** (`src/WebView/panelManager.ts`, `dashboard.ts`, `media/dashboard.*`): HTML separado del TypeScript (CSP + nonce), formularios reales para la alarma (tipo/ruta/volumen, con selector de archivo nativo) y los 4 tiempos, guardado vía `src/configService.ts` (reutilizado también por los comandos nativos de configuración). Se refresca solo (vía `postMessage`) tras completar sesiones o guardar configuración, sin recargar el HTML.

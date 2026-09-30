@@ -18,7 +18,7 @@ export class MusicPlayer extends EventEmitter {
 
     private initPlayer() {
         // Iniciamos PowerShell en modo persistente.
-        // player_bridge.ps1 se copia junto al JS compilado (ver script "postcompile"),
+        // player_bridge.ps1 se copia junto al JS compilado (ver plugin en esbuild.js),
         // por lo que siempre vive al lado de este archivo, tanto en desarrollo como empaquetado.
         const bridgePath = path.join(__dirname, 'player_bridge.ps1');
         this.psProcess = spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', bridgePath]);
@@ -178,6 +178,14 @@ export class MusicPlayer extends EventEmitter {
      */
     public sessionControl(sessionId: string, action: 'play' | 'pause' | 'next' | 'previous') {
         this.sendCommand('sessionControl', { sessionId, action });
+    }
+
+    /**
+     * Abre un URI de Spotify y, solo si la ventana de Spotify queda activa, envía Enter
+     * para reproducir. Ver comando `spotifyOpen` en src/player_bridge.ps1.
+     */
+    public spotifyOpen(uri: string) {
+        this.sendCommand('spotifyOpen', { uri });
     }
 
     execCommand(command: string) {

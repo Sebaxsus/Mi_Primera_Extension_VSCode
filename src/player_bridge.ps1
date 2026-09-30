@@ -148,6 +148,25 @@ while ($true) {
                     }
                 }
             }
+            "spotifyOpen" {
+                # El URI llega como dato (no se interpola en codigo). El Enter para reproducir
+                # solo se envia si la ventana de Spotify quedo efectivamente activa: antes se
+                # enviaba a ciegas y, si Spotify tardaba en abrir, caia sobre el boton "Probar"
+                # de VS Code y re-disparaba la alarma en bucle.
+                Start-Process $data.uri
+                $sp = $null
+                for ($i = 0; $i -lt 20 -and -not $sp; $i++) {
+                    Start-Sleep -Milliseconds 500
+                    $sp = Get-Process Spotify -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+                }
+                if ($sp -and $wshell.AppActivate($sp.Id)) {
+                    Start-Sleep -Milliseconds 300
+                    $wshell.SendKeys('~')
+                    SendInfo "INFO" "Spotify activado"
+                } else {
+                    SendInfo "WARN" "Spotify no tomo el foco; no se envio Enter"
+                }
+            }
             "exit"   { exit }
         }
     } catch {

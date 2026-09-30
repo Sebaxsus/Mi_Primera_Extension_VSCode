@@ -8,7 +8,7 @@ export function commandExists(command: string): boolean {
     try {
         const platform = process.platform;
         const checkCommand = platform === 'win32' ? 'where' : 'which';
-        child_process.execSync(`${checkCommand} ${command}`, { stdio: 'ignore' });
+        child_process.execSync(`${checkCommand} ${command}`, { stdio: 'ignore', windowsHide: true });
         return true;
     } catch {
         return false;

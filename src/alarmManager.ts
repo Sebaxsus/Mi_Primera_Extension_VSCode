@@ -135,7 +135,7 @@ export class AlarmManager {
                         '-volume',
                         volumeDb.toString(),
                         filePath
-                    ], { stdio: 'ignore' });
+                    ], { stdio: 'ignore', windowsHide: true });
                 } else if (commandExists('mpg123')) {
                     child_process.spawn('mpg123', [filePath]);
                 } else if (commandExists('aplay')) {
@@ -182,7 +182,7 @@ export class AlarmManager {
                     '-nostats',
                     '-volume', volumeDb.toString(),
                     streamUrl
-                ], { stdio: 'ignore' });
+                ], { stdio: 'ignore', windowsHide: true });
 
                 this.currentProcess.on('error', () => {
                     vscode.window.showErrorMessage('Error al reproducir audio de YouTube con ffplay');
@@ -247,7 +247,7 @@ export class AlarmManager {
         const platform = process.platform;
         
         if (platform === 'win32') {
-            child_process.exec('rundll32 user32.dll,MessageBeep');
+            child_process.exec('rundll32 user32.dll,MessageBeep', { windowsHide: true });
         } else if (platform === 'darwin') {
             child_process.exec('afplay /System/Library/Sounds/Glass.aiff');
         } else {

@@ -174,10 +174,12 @@ export class Timer {
             // stdio 'ignore' + '-nostats': ffplay escribe su línea de estado en stderr
             // varias veces por segundo; si nadie lee el pipe, el buffer se llena y ffplay
             // se bloquea (el video se congelaba a los 10-30 s).
+            // detached (y no windowsHide): windowsHide también oculta la ventana SDL del
+            // video; detached evita que se cree una consola sin ocultar esa ventana.
             const ffplayProcess = spawn(
                 'ffplay',
                 ['-autoexit', '-loglevel', 'error', '-nostats', '-window_title', 'Estiramiento', streamUrl],
-                { stdio: 'ignore' }
+                { stdio: 'ignore', detached: true }
             );
 
             ffplayProcess.on('error', () => {

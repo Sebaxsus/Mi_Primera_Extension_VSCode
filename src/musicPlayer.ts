@@ -21,7 +21,15 @@ export class MusicPlayer extends EventEmitter {
         // player_bridge.ps1 se copia junto al JS compilado (ver plugin en esbuild.js),
         // por lo que siempre vive al lado de este archivo, tanto en desarrollo como empaquetado.
         const bridgePath = path.join(__dirname, 'player_bridge.ps1');
-        this.psProcess = spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', bridgePath]);
+        // windowsHide: sin CREATE_NO_WINDOW, en equipos con Windows Terminal como terminal
+        // predeterminada el bridge se abre como una ventana visible (una por ventana de VS Code).
+        // -NoProfile: evita ejecutar el $PROFILE del usuario (oh-my-posh, conda, Install-Module...),
+        // que ademas ensuciaria el stdout JSON. No usar -NonInteractive: rompe Read-Host.
+        this.psProcess = spawn(
+            'powershell',
+            ['-NoProfile', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-File', bridgePath],
+            { windowsHide: true }
+        );
 
         // Escuchar mensajes provenientes de PowerShell
         this.psProcess.stdout?.on('data', (data) => {

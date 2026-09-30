@@ -201,7 +201,7 @@ export function getStreamUrl(ytDlpPath: string, videoUrl: string, formatArgs: st
             '--no-warnings',
             '--extractor-args', `youtube:player_client=${YOUTUBE_PLAYER_CLIENTS}`,
             videoUrl
-        ]);
+        ], { windowsHide: true });
 
         let stdout = '';
         let stderr = '';

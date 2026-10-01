@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { MusicPlayer } from '../musicPlayer';
 import { getPlayerHtml } from './playerView';
+import { StretchVideoPlayer, StretchVideoState } from '../stretchVideoPlayer';
 
 const POLLING_INTERVAL_MS = 2000;
 
@@ -11,6 +12,9 @@ const POLLING_INTERVAL_MS = 2000;
  *
  * Lista todas las sesiones de medios activas del sistema (SMTC), no solo la
  * que Windows considera "actual", y permite controlar cada una por separado.
+ *
+ * También muestra, mientras está abierto, los controles del video de
+ * estiramiento (ffplay), que solo afectan a ese video.
  */
 export class PlayerViewProvider implements vscode.WebviewViewProvider {
     private view: vscode.WebviewView | undefined;
@@ -18,7 +22,8 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
 
     constructor(
         private readonly extensionUri: vscode.Uri,
-        private readonly musicPlayer: MusicPlayer
+        private readonly musicPlayer: MusicPlayer,
+        private readonly stretchVideoPlayer: StretchVideoPlayer
     ) {
         this.musicPlayer.on('event', (response: any) => {
             if (response.event === 'mediaSessions') {
@@ -28,6 +33,8 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
                 });
             }
         });
+
+        this.stretchVideoPlayer.on('change', (state: StretchVideoState) => this.postStretchVideoState(state));
     }
 
     resolveWebviewView(webviewView: vscode.WebviewView): void {
@@ -51,6 +58,9 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
                 case 'mediaVolumeDown':
                     this.musicPlayer.mediaVolumeDown();
                     break;
+                case 'stretchControl':
+                    this.stretchVideoPlayer.control(message.action);
+                    break;
                 case 'openDashboard':
                     vscode.commands.executeCommand('productivityTimer.showStats');
                     break;
@@ -71,6 +81,11 @@ export class PlayerViewProvider implements vscode.WebviewViewProvider {
         });
 
         this.startPolling();
+        this.postStretchVideoState(this.stretchVideoPlayer.getState());
+    }
+
+    private postStretchVideoState(state: StretchVideoState): void {
+        this.view?.webview.postMessage({ command: 'stretchVideo', state });
     }
 
     private startPolling(): void {

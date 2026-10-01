@@ -9,7 +9,7 @@ const TASK_NAME = 'ProductivityTimerDailyReminder';
 
 function runSchtasks(args: string[]): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
-        execFile('schtasks', args, (error, stdout, stderr) => {
+        execFile('schtasks', args, { windowsHide: true }, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(stderr || error.message));
                 return;

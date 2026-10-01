@@ -130,10 +130,12 @@ export class AlarmManager {
                     this.currentProcess = child_process.spawn('ffplay', [
                         '-nodisp',
                         '-autoexit',
+                        '-loglevel', 'error',
+                        '-nostats',
                         '-volume',
                         volumeDb.toString(),
                         filePath
-                    ]);
+                    ], { stdio: 'ignore', windowsHide: true });
                 } else if (commandExists('mpg123')) {
                     child_process.spawn('mpg123', [filePath]);
                 } else if (commandExists('aplay')) {
@@ -171,12 +173,16 @@ export class AlarmManager {
             // en Windows, si ffmpeg no está instalado, se cae al MediaPlayer .NET del bridge existente.
             if (commandExists('ffplay')) {
                 const volumeDb = this.volumeToDb(volume);
+                // stdio 'ignore' + '-nostats': si nadie lee el stderr de ffplay, el
+                // buffer del pipe se llena y la reproducción se congela.
                 this.currentProcess = child_process.spawn('ffplay', [
                     '-nodisp',
                     '-autoexit',
+                    '-loglevel', 'error',
+                    '-nostats',
                     '-volume', volumeDb.toString(),
                     streamUrl
-                ]);
+                ], { stdio: 'ignore', windowsHide: true });
 
                 this.currentProcess.on('error', () => {
                     vscode.window.showErrorMessage('Error al reproducir audio de YouTube con ffplay');
@@ -209,7 +215,7 @@ export class AlarmManager {
         try {
             if (platform === 'win32') {
                 // Windows: intentar controlar Spotify via comando
-                this.musicPlayer.execCommand(`Start-Process '${trackUri}';$wshell.SendKeys('~');`);
+                this.musicPlayer.spotifyOpen(trackUri);
                 showToast(
                     'Por favor, reproduce manualmente la canción en Spotify. ' +
                     'El control automático de Spotify requiere configuración adicional.',
@@ -241,7 +247,7 @@ export class AlarmManager {
         const platform = process.platform;
         
         if (platform === 'win32') {
-            child_process.exec('rundll32 user32.dll,MessageBeep');
+            child_process.exec('rundll32 user32.dll,MessageBeep', { windowsHide: true });
         } else if (platform === 'darwin') {
             child_process.exec('afplay /System/Library/Sounds/Glass.aiff');
         } else {
@@ -272,6 +278,10 @@ export class AlarmManager {
     }
 
     async testAlarm(): Promise<void> {
+        // Evita encadenar pruebas (ej. un Enter/click repetido sobre el botón "Probar").
+        if (this.playing) {
+            return;
+        }
         showToast('🔊 Probando alarma...');
         await this.playAlarm();
 

@@ -10,6 +10,7 @@ import { SpotifyAuth } from './Spotify/auth';
 import { showToast } from './notify';
 import { saveGeneralConfig, saveStretchVideos, saveAlarmConfig } from './configService';
 import { enableDailyReminder, disableDailyReminder } from './dailyReminderManager';
+import { StretchVideoPlayer, StretchVideoAction, StretchVideoState } from './stretchVideoPlayer';
 
 let timer: Timer;
 let dataManager: DataManager;
@@ -35,12 +36,17 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(statusBarItem);
 
+    // Video de estiramiento (ffplay), controlable desde el panel Reproductor y la status bar.
+    const stretchVideoPlayer = new StretchVideoPlayer(context, alarmManager.getMusicPlayer());
+    context.subscriptions.push(stretchVideoPlayer);
+    registerStretchVideoControls(context, stretchVideoPlayer);
+
     // Inicializar timer
-    timer = new Timer(statusBarItem, alarmManager, dataManager, context);
+    timer = new Timer(statusBarItem, alarmManager, dataManager, stretchVideoPlayer);
 
     // Registrar el panel de reproductor (activity bar), reutilizando el mismo
     // MusicPlayer/proceso de PowerShell que ya usa la alarma.
-    const playerProvider = new PlayerViewProvider(context.extensionUri, alarmManager.getMusicPlayer());
+    const playerProvider = new PlayerViewProvider(context.extensionUri, alarmManager.getMusicPlayer(), stretchVideoPlayer);
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider('productivityTimer.playerView', playerProvider)
     );
@@ -115,6 +121,46 @@ export function activate(context: vscode.ExtensionContext) {
     if (stats.currentStreak > 0 || stats.longestStreak > 0) {
         showToast(`¡Bienvenido de vuelta! 🔥 Racha actual: ${stats.currentStreak} días | ⭐ Puntos: ${stats.points}`, 8000);
     }
+}
+
+/**
+ * Comandos y botones de la status bar para controlar el video de estiramiento.
+ * Los botones solo se muestran mientras el video está abierto.
+ */
+function registerStretchVideoControls(context: vscode.ExtensionContext, stretchVideoPlayer: StretchVideoPlayer) {
+    const commands: [string, StretchVideoAction][] = [
+        ['productivityTimer.stretchVideoTogglePause', 'togglePause'],
+        ['productivityTimer.stretchVideoSeekBack', 'back'],
+        ['productivityTimer.stretchVideoSeekForward', 'forward'],
+        ['productivityTimer.stretchVideoStop', 'stop'],
+    ];
+    for (const [id, action] of commands) {
+        context.subscriptions.push(vscode.commands.registerCommand(id, () => stretchVideoPlayer.control(action)));
+    }
+
+    const pauseItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
+    pauseItem.command = 'productivityTimer.stretchVideoTogglePause';
+    const stopItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 98);
+    stopItem.command = 'productivityTimer.stretchVideoStop';
+    stopItem.text = '$(debug-stop)';
+    stopItem.tooltip = 'Cerrar video de estiramiento';
+    context.subscriptions.push(pauseItem, stopItem);
+
+    const update = (state: StretchVideoState) => {
+        if (!state.active) {
+            pauseItem.hide();
+            stopItem.hide();
+            return;
+        }
+        if (state.controllable) {
+            pauseItem.text = state.paused ? '$(play) Estiramiento' : '$(debug-pause) Estiramiento';
+            pauseItem.tooltip = state.paused ? 'Reanudar video de estiramiento' : 'Pausar video de estiramiento';
+            pauseItem.show();
+        }
+        stopItem.show();
+    };
+    stretchVideoPlayer.on('change', update);
+    update(stretchVideoPlayer.getState());
 }
 
 function showDailyMotivationalQuote() {

@@ -102,9 +102,40 @@ function renderSessions(sessions) {
     }
 }
 
+// --- Controles del video de estiramiento (ffplay): solo afectan a ese video ---
+const stretchCardEl = document.getElementById('stretch-card');
+const stretchStatusEl = document.getElementById('stretch-status');
+const stretchPauseBtn = document.getElementById('stretch-pause');
+const stretchMuteBtn = document.getElementById('stretch-mute');
+
+document.querySelectorAll('#stretch-controls button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+        vscode.postMessage({ command: 'stretchControl', action: btn.dataset.action });
+    });
+});
+
+function renderStretchVideo(state) {
+    stretchCardEl.hidden = !state.active;
+    if (!state.active) {
+        return;
+    }
+
+    stretchStatusEl.textContent = state.paused ? 'En pausa' : (state.muted ? 'Reproduciendo (silenciado)' : 'Reproduciendo');
+    stretchPauseBtn.textContent = state.paused ? '▶' : '⏸';
+    stretchPauseBtn.title = state.paused ? 'Reanudar' : 'Pausar';
+    stretchMuteBtn.title = state.muted ? 'Quitar silencio' : 'Silenciar';
+
+    // Fuera de Windows no se pueden enviar teclas a ffplay: solo queda "Cerrar".
+    document.querySelectorAll('#stretch-controls button').forEach((btn) => {
+        btn.hidden = !state.controllable && btn.dataset.action !== 'stop';
+    });
+}
+
 window.addEventListener('message', (event) => {
     const message = event.data;
     if (message.command === 'mediaSessions') {
         renderSessions(message.sessions);
+    } else if (message.command === 'stretchVideo') {
+        renderStretchVideo(message.state);
     }
 });

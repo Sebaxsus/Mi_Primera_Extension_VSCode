@@ -18,10 +18,18 @@ export class MusicPlayer extends EventEmitter {
 
     private initPlayer() {
         // Iniciamos PowerShell en modo persistente.
-        // player_bridge.ps1 se copia junto al JS compilado (ver script "postcompile"),
+        // player_bridge.ps1 se copia junto al JS compilado (ver plugin en esbuild.js),
         // por lo que siempre vive al lado de este archivo, tanto en desarrollo como empaquetado.
         const bridgePath = path.join(__dirname, 'player_bridge.ps1');
-        this.psProcess = spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', bridgePath]);
+        // windowsHide: sin CREATE_NO_WINDOW, en equipos con Windows Terminal como terminal
+        // predeterminada el bridge se abre como una ventana visible (una por ventana de VS Code).
+        // -NoProfile: evita ejecutar el $PROFILE del usuario (oh-my-posh, conda, Install-Module...),
+        // que ademas ensuciaria el stdout JSON. No usar -NonInteractive: rompe Read-Host.
+        this.psProcess = spawn(
+            'powershell',
+            ['-NoProfile', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-File', bridgePath],
+            { windowsHide: true }
+        );
 
         // Escuchar mensajes provenientes de PowerShell
         this.psProcess.stdout?.on('data', (data) => {
@@ -178,6 +186,23 @@ export class MusicPlayer extends EventEmitter {
      */
     public sessionControl(sessionId: string, action: 'play' | 'pause' | 'next' | 'previous') {
         this.sendCommand('sessionControl', { sessionId, action });
+    }
+
+    /**
+     * Abre un URI de Spotify y, solo si la ventana de Spotify queda activa, envía Enter
+     * para reproducir. Ver comando `spotifyOpen` en src/player_bridge.ps1.
+     */
+    public spotifyOpen(uri: string) {
+        this.sendCommand('spotifyOpen', { uri });
+    }
+
+    /**
+     * Envía una tecla (virtual-key code) a la ventana principal del proceso `pid`,
+     * sin robarle el foco a VS Code. Usado para controlar el ffplay del video de
+     * estiramiento. Ver comando `windowKey` en src/player_bridge.ps1.
+     */
+    public windowKey(pid: number, vk: number) {
+        this.sendCommand('windowKey', { pid, vk });
     }
 
     execCommand(command: string) {

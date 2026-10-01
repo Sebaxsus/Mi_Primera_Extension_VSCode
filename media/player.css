@@ -120,3 +120,19 @@ body {
 .player-footer button:hover {
     background: var(--vscode-button-secondaryHoverBackground);
 }
+
+/* Tarjeta de controles del video de estiramiento (ffplay) */
+.stretch-card {
+    cursor: default;
+    margin-bottom: 16px;
+    border-color: var(--vscode-focusBorder);
+}
+
+.stretch-card .session-controls {
+    flex-wrap: wrap;
+}
+
+.stretch-card[hidden],
+.stretch-card button[hidden] {
+    display: none;
+}
